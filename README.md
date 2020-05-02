@@ -29,3 +29,8 @@ Call the API, the easiest way to do this is to import
 [the provided postman collection](cqrs-demo.postman_collection.json)
 into your Postman client. Note that the command calls return a 204 status with no content. 
 For feedback on state you should call a query.
+
+### Documentation
+
+[Documentation can be found here](https://doc.rust-cqrs.org/)
+ for the CQRS and event sourcing portions of this demo application. 

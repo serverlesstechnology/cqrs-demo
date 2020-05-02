@@ -124,9 +124,9 @@ dependencies = [
 
 [[package]]
 name = "cqrs-es"
-version = "0.0.16"
+version = "0.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e45b9a2ca9464eb034f231057c874312b70cf1814e630fc25bd2b1bd3cbac24"
+checksum = "ffb1bb273373f69a46783a02ea320a944de4f20254d70bae6f43b0e9a386a44d"
 dependencies = [
  "chrono",
  "serde",
@@ -448,9 +448,9 @@ dependencies = [
 
 [[package]]
 name = "postgres-es"
-version = "0.0.16"
+version = "0.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d771ca2000d332869e732c84cdb387910fc95d4c2e82bec44ff22b944c5cc94b"
+checksum = "3d7071aad8dbce2f1d397fa71fadc510956d6ad04a027b015450bb7c59ed772d"
 dependencies = [
  "chrono",
  "cqrs-es",
