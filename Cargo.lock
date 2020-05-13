@@ -112,6 +112,7 @@ checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 name = "cqrs-demo"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "cqrs-es",
  "iron",
  "postgres",
@@ -124,9 +125,9 @@ dependencies = [
 
 [[package]]
 name = "cqrs-es"
-version = "0.0.17"
+version = "0.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffb1bb273373f69a46783a02ea320a944de4f20254d70bae6f43b0e9a386a44d"
+checksum = "20413e7211f8748286c014d107f9f3ced57bd45c1b887d0aaf5bac4515743181"
 dependencies = [
  "chrono",
  "serde",
@@ -448,9 +449,9 @@ dependencies = [
 
 [[package]]
 name = "postgres-es"
-version = "0.0.17"
+version = "0.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d7071aad8dbce2f1d397fa71fadc510956d6ad04a027b015450bb7c59ed772d"
+checksum = "58b7a9fca032678ebf94a30942b9f21f8e55ccadebee86e87224ab70a68c2b0b"
 dependencies = [
  "chrono",
  "cqrs-es",
