@@ -6,8 +6,8 @@ use crate::events::BankAccountEvent;
 
 pub struct SimpleLoggingQueryProcessor {}
 
-impl QueryProcessor<BankAccount, BankAccountEvent> for SimpleLoggingQueryProcessor {
-    fn dispatch(&self, aggregate_id: &str, events: &[EventEnvelope<BankAccount, BankAccountEvent>]) {
+impl QueryProcessor<BankAccount> for SimpleLoggingQueryProcessor {
+    fn dispatch(&self, aggregate_id: &str, events: &[EventEnvelope<BankAccount>]) {
         for event in events {
             let payload = serde_json::to_string_pretty(&event.payload).unwrap();
             println!("{}-{}\n{}", aggregate_id, event.sequence, payload);
@@ -22,8 +22,8 @@ pub struct BankAccountQuery {
     written_checks: Vec<String>,
 }
 
-impl Query<BankAccount, BankAccountEvent> for BankAccountQuery {
-    fn update(&mut self, event: &EventEnvelope<BankAccount, BankAccountEvent>) {
+impl Query<BankAccount> for BankAccountQuery {
+    fn update(&mut self, event: &EventEnvelope<BankAccount>) {
         match &event.payload {
             BankAccountEvent::AccountOpened(payload) => {
                 self.account_id = Some(payload.account_id.clone());

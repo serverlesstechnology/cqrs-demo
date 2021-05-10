@@ -4,9 +4,9 @@
 > and postgres persistence.
 
 ## Requirements
-- rust stable (duh)
+- rust stable
 - docker & [docker-compose](https://docs.docker.com/compose/) for starting an instance of Postgres
-- [postman](https://www.postman.com/) (or other Restful client)
+- [postman](https://www.postman.com/) (or curl or your favorite Restful client)
 
 Alternatively, if a a standard Postgres instance is running locally it can be utilized instead of the docker instance,
 see [the init script](db/init.sql) for the expected table configuration. 

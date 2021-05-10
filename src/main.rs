@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::io::Read;
 
-use cqrs_es::{AggregateError, Command};
+use cqrs_es::AggregateError;
 use iron::{Headers, Iron, IronResult, Request, Response, status};
 use postgres::{Connection, TlsMode};
 use postgres_es::{GenericQueryRepository, PostgresCqrs};
@@ -12,8 +12,7 @@ use router::Router;
 use serde::de::DeserializeOwned;
 
 use crate::aggregate::BankAccount;
-use crate::commands::{DepositMoney, OpenAccount, WithdrawMoney, WriteCheck};
-use crate::events::BankAccountEvent;
+use crate::commands::{BankAccountCommand, DepositMoney, OpenAccount, WithdrawMoney, WriteCheck};
 use crate::queries::{BankAccountQuery, SimpleLoggingQueryProcessor};
 
 mod application;
@@ -26,6 +25,7 @@ fn main() {
     let mut router = Router::new();
     router.get("/account/:query_id", account_query, "account_query");
     router.post("/account/:command_type/:aggregate_id", account_command, "account_command");
+    println!("Starting server at http://localhost:3030");
     Iron::new(router).http("localhost:3030").unwrap();
 }
 
@@ -36,10 +36,10 @@ pub fn account_command(req: &mut Request) -> IronResult<Response> {
     let mut payload = String::new();
     req.body.read_to_string(&mut payload).unwrap();
     let result = match command_type {
-        "openAccount" => process_command::<OpenAccount>(aggregate_id, payload),
-        "depositMoney" => process_command::<DepositMoney>(aggregate_id, payload),
-        "withdrawMoney" => process_command::<WithdrawMoney>(aggregate_id, payload),
-        "writeCheck" => process_command::<WriteCheck>(aggregate_id, payload),
+        "openAccount" => process_command("OpenAccount", aggregate_id, payload),
+        "depositMoney" => process_command("DepositMoney", aggregate_id, payload),
+        "withdrawMoney" => process_command("WithdrawMoney", aggregate_id, payload),
+        "writeCheck" => process_command("WriteCheck", aggregate_id, payload),
         _ => return Ok(Response::with(status::NotFound))
     };
     match result {
@@ -56,10 +56,9 @@ pub fn account_command(req: &mut Request) -> IronResult<Response> {
     }
 }
 
-fn process_command<T>(aggregate_id: &str, payload: String) -> Result<(), AggregateError>
-    where T: Command<BankAccount, BankAccountEvent> + DeserializeOwned
-{
-    let payload = match serde_json::from_str::<T>(payload.as_str()) {
+fn process_command(payload_type: &str, aggregate_id: &str, payload: String) -> Result<(), AggregateError> {
+    let event_ser = format!("{{\"{}\":{}}}", payload_type, payload);
+    let payload = match serde_json::from_str(event_ser.as_str()) {
         Ok(payload) => { payload }
         Err(err) => {
             return Err(AggregateError::TechnicalError(err.to_string()));
@@ -95,9 +94,9 @@ fn std_headers() -> Headers {
     headers
 }
 
-type AccountQuery = GenericQueryRepository::<BankAccountQuery, BankAccount, BankAccountEvent>;
+type AccountQuery = GenericQueryRepository::<BankAccountQuery, BankAccount>;
 
-fn cqrs_framework() -> PostgresCqrs<BankAccount, BankAccountEvent> {
+fn cqrs_framework() -> PostgresCqrs<BankAccount> {
     let simple_query = SimpleLoggingQueryProcessor {};
     let mut account_query_processor = AccountQuery::new("account_query", db_connection());
     account_query_processor.with_error_handler(Box::new(|e| println!("{}", e)));

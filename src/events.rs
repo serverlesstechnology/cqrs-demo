@@ -1,8 +1,6 @@
 use cqrs_es::DomainEvent;
 use serde::{Deserialize, Serialize};
 
-use crate::aggregate::BankAccount;
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum BankAccountEvent {
     AccountOpened(AccountOpened),
@@ -35,34 +33,4 @@ pub struct CustomerWroteCheck {
     pub balance: f64,
 }
 
-impl DomainEvent<BankAccount> for BankAccountEvent {
-    fn apply(self, account: &mut BankAccount) {
-        match self {
-            BankAccountEvent::AccountOpened(e) => { e.apply(account) }
-            BankAccountEvent::CustomerDepositedMoney(e) => { e.apply(account) }
-            BankAccountEvent::CustomerWithdrewCash(e) => { e.apply(account) }
-            BankAccountEvent::CustomerWroteCheck(e) => { e.apply(account) }
-        }
-    }
-}
-
-impl DomainEvent<BankAccount> for AccountOpened {
-    fn apply(self, _account: &mut BankAccount) {    }
-}
-impl DomainEvent<BankAccount> for CustomerDepositedMoney {
-    fn apply(self, account: &mut BankAccount) {
-        account.balance = self.balance;
-    }
-}
-
-impl DomainEvent<BankAccount> for CustomerWithdrewCash {
-    fn apply(self, account: &mut BankAccount) {
-        account.balance = self.balance;
-    }
-}
-
-impl DomainEvent<BankAccount> for CustomerWroteCheck {
-    fn apply(self, account: &mut BankAccount) {
-        account.balance = self.balance;
-    }
-}
+impl DomainEvent for BankAccountEvent {}
