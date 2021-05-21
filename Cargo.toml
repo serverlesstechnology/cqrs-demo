@@ -5,10 +5,8 @@ authors = ["Dave Garred <dave.garred@serverlesstechnology.com>"]
 edition = "2018"
 
 [dependencies]
-#cqrs-es = "0.1.0"
-#postgres-es = "0.1.0"
-cqrs-es = { path = "../cqrs" }
-postgres-es = { path = "../postgres-es" }
+cqrs-es = "0.1.0"
+postgres-es = "0.1.0"
 
 serde = { version = "1.0.104", features = ["derive"]}
 serde_json = "1.0"
