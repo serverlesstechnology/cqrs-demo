@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod simple_application_tests {
-    use cqrs_es::CqrsFramework;
     use cqrs_es::mem_store::MemStore;
+    use cqrs_es::CqrsFramework;
 
     use crate::aggregate::BankAccount;
     use crate::commands::{BankAccountCommand, DepositMoney};
@@ -12,6 +12,10 @@ mod simple_application_tests {
         let event_store = MemStore::<BankAccount>::default();
         let query = SimpleLoggingQueryProcessor {};
         let cqrs = CqrsFramework::new(event_store, vec![Box::new(query)]);
-        cqrs.execute("test_id", BankAccountCommand::DepositMoney(DepositMoney { amount: 1000_f64 })).unwrap()
+        cqrs.execute(
+            "test_id",
+            BankAccountCommand::DepositMoney(DepositMoney { amount: 1000_f64 }),
+        )
+        .unwrap()
     }
 }

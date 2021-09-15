@@ -1,46 +1,50 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all)]
 
-use std::collections::HashMap;
 use std::io::Read;
 
 use cqrs_es::AggregateError;
-use iron::{Headers, Iron, IronResult, Request, Response, status};
-use postgres::{Connection, TlsMode};
-use postgres_es::{GenericQueryRepository, PostgresCqrs};
+use iron::{status, Chain, Headers, Iron, IronResult, Request, Response};
 use router::Router;
-use serde::de::DeserializeOwned;
 
-use crate::aggregate::BankAccount;
-use crate::commands::{BankAccountCommand, DepositMoney, OpenAccount, WithdrawMoney, WriteCheck};
-use crate::queries::{BankAccountQuery, SimpleLoggingQueryProcessor};
+use crate::config::{AccountQueryKey, CommandServiceKey, CqrsMiddleware};
 
-mod application;
 mod aggregate;
-mod events;
+mod application;
 mod commands;
+mod config;
+mod events;
 mod queries;
+mod service;
 
 fn main() {
     let mut router = Router::new();
     router.get("/account/:query_id", account_query, "account_query");
-    router.post("/account/:command_type/:aggregate_id", account_command, "account_command");
+    router.post(
+        "/account/:command_type/:aggregate_id",
+        account_command,
+        "account_command",
+    );
+    let mut chain = Chain::new(router);
+    let cqrs = CqrsMiddleware::configured();
+    chain.link_before(cqrs);
     println!("Starting server at http://localhost:3030");
-    Iron::new(router).http("localhost:3030").unwrap();
+    Iron::new(chain).http("localhost:3030").unwrap();
 }
 
 pub fn account_command(req: &mut Request) -> IronResult<Response> {
+    let command_service = req.extensions.get::<CommandServiceKey>().unwrap();
     let params = req.extensions.get::<Router>().unwrap();
     let command_type = params.find("command_type").unwrap_or("");
     let aggregate_id = params.find("aggregate_id").unwrap_or("");
     let mut payload = String::new();
     req.body.read_to_string(&mut payload).unwrap();
     let result = match command_type {
-        "openAccount" => process_command("OpenAccount", aggregate_id, payload),
-        "depositMoney" => process_command("DepositMoney", aggregate_id, payload),
-        "withdrawMoney" => process_command("WithdrawMoney", aggregate_id, payload),
-        "writeCheck" => process_command("WriteCheck", aggregate_id, payload),
-        _ => return Ok(Response::with(status::NotFound))
+        "openAccount" => command_service.process_command("OpenAccount", aggregate_id, payload),
+        "depositMoney" => command_service.process_command("DepositMoney", aggregate_id, payload),
+        "withdrawMoney" => command_service.process_command("WithdrawMoney", aggregate_id, payload),
+        "writeCheck" => command_service.process_command("WriteCheck", aggregate_id, payload),
+        _ => return Ok(Response::with(status::NotFound)),
     };
     match result {
         Ok(_) => Ok(Response::with(status::NoContent)),
@@ -56,28 +60,18 @@ pub fn account_command(req: &mut Request) -> IronResult<Response> {
     }
 }
 
-fn process_command(payload_type: &str, aggregate_id: &str, payload: String) -> Result<(), AggregateError> {
-    let event_ser = format!("{{\"{}\":{}}}", payload_type, payload);
-    let payload = match serde_json::from_str(event_ser.as_str()) {
-        Ok(payload) => { payload }
-        Err(err) => {
-            return Err(AggregateError::TechnicalError(err.to_string()));
-        }
-    };
-    let cqrs = cqrs_framework();
-    let mut metadata = HashMap::new();
-    metadata.insert("time".to_string(), chrono::Utc::now().to_rfc3339());
-    cqrs.execute_with_metadata(aggregate_id, payload, metadata)
-}
-
 pub fn account_query(req: &mut Request) -> IronResult<Response> {
-    let query_id = req.extensions.get::<Router>().unwrap().find("query_id").unwrap_or("").to_string();
+    let query_id = req
+        .extensions
+        .get::<Router>()
+        .unwrap()
+        .find("query_id")
+        .unwrap_or("")
+        .to_string();
 
-    let query_repo = AccountQuery::new("account_query", db_connection());
+    let query_repo = req.extensions.get::<AccountQueryKey>().unwrap();
     match query_repo.load(query_id) {
-        None => {
-            Ok(Response::with(status::NotFound))
-        }
+        None => Ok(Response::with(status::NotFound)),
         Some(query) => {
             let body = serde_json::to_string(&query).unwrap();
             let mut response = Response::with((status::Ok, body));
@@ -92,18 +86,4 @@ fn std_headers() -> Headers {
     let content_type = iron::headers::ContentType::json();
     headers.set(content_type);
     headers
-}
-
-type AccountQuery = GenericQueryRepository::<BankAccountQuery, BankAccount>;
-
-fn cqrs_framework() -> PostgresCqrs<BankAccount> {
-    let simple_query = SimpleLoggingQueryProcessor {};
-    let mut account_query_processor = AccountQuery::new("account_query", db_connection());
-    account_query_processor.with_error_handler(Box::new(|e| println!("{}", e)));
-
-    postgres_es::postgres_cqrs(db_connection(), vec![Box::new(simple_query), Box::new(account_query_processor)])
-}
-
-fn db_connection() -> Connection {
-    Connection::connect("postgresql://demo_user:demo_pass@localhost:5432/demo", TlsMode::None).unwrap()
 }

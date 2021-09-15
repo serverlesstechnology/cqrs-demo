@@ -11,7 +11,7 @@ pub enum BankAccountEvent {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AccountOpened {
-    pub account_id: String
+    pub account_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

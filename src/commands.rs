@@ -10,17 +10,17 @@ pub enum BankAccountCommand {
 
 #[derive(Serialize, Deserialize)]
 pub struct OpenAccount {
-    pub account_id: String
+    pub account_id: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct DepositMoney {
-    pub amount: f64
+    pub amount: f64,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct WithdrawMoney {
-    pub amount: f64
+    pub amount: f64,
 }
 
 #[derive(Serialize, Deserialize)]
