@@ -25,18 +25,22 @@ pub struct BankAccountQuery {
 impl Query<BankAccount> for BankAccountQuery {
     fn update(&mut self, event: &EventEnvelope<BankAccount>) {
         match &event.payload {
-            BankAccountEvent::AccountOpened(payload) => {
-                self.account_id = Some(payload.account_id.clone());
+            BankAccountEvent::AccountOpened { account_id } => {
+                self.account_id = Some(account_id.clone());
             }
-            BankAccountEvent::CustomerDepositedMoney(payload) => {
-                self.balance = payload.balance;
+            BankAccountEvent::CustomerDepositedMoney { amount: _, balance } => {
+                self.balance = *balance;
             }
-            BankAccountEvent::CustomerWithdrewCash(payload) => {
-                self.balance = payload.balance;
+            BankAccountEvent::CustomerWithdrewCash { amount: _, balance } => {
+                self.balance = *balance;
             }
-            BankAccountEvent::CustomerWroteCheck(payload) => {
-                self.balance = payload.balance;
-                self.written_checks.push(payload.check_number.clone())
+            BankAccountEvent::CustomerWroteCheck {
+                check_number,
+                amount: _,
+                balance,
+            } => {
+                self.balance = *balance;
+                self.written_checks.push(check_number.clone())
             }
         }
     }

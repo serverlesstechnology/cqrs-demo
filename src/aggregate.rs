@@ -2,10 +2,7 @@ use cqrs_es::{Aggregate, AggregateError};
 use serde::{Deserialize, Serialize};
 
 use crate::commands::BankAccountCommand;
-use crate::events::{
-    AccountOpened, BankAccountEvent, CustomerDepositedMoney, CustomerWithdrewCash,
-    CustomerWroteCheck,
-};
+use crate::events::BankAccountEvent;
 
 #[derive(Serialize, Deserialize)]
 pub struct BankAccount {
@@ -23,61 +20,57 @@ impl Aggregate for BankAccount {
 
     fn handle(&self, command: Self::Command) -> Result<Vec<Self::Event>, AggregateError> {
         match command {
-            BankAccountCommand::OpenAccount(payload) => {
-                let event_payload = AccountOpened {
-                    account_id: payload.account_id,
-                };
-                Ok(vec![BankAccountEvent::AccountOpened(event_payload)])
-            }
+            BankAccountCommand::OpenAccount(payload) => Ok(vec![BankAccountEvent::AccountOpened {
+                account_id: payload.account_id,
+            }]),
             BankAccountCommand::DepositMoney(payload) => {
                 let balance = self.balance + payload.amount;
-                let event_payload = CustomerDepositedMoney {
+                Ok(vec![BankAccountEvent::CustomerDepositedMoney {
                     amount: payload.amount,
                     balance,
-                };
-                Ok(vec![BankAccountEvent::CustomerDepositedMoney(
-                    event_payload,
-                )])
+                }])
             }
             BankAccountCommand::WithdrawMoney(payload) => {
                 let balance = self.balance - payload.amount;
                 if balance < 0_f64 {
                     return Err(AggregateError::new("funds not available"));
                 }
-                let event_payload = CustomerWithdrewCash {
+                Ok(vec![BankAccountEvent::CustomerWithdrewCash {
                     amount: payload.amount,
                     balance,
-                };
-                Ok(vec![BankAccountEvent::CustomerWithdrewCash(event_payload)])
+                }])
             }
             BankAccountCommand::WriteCheck(payload) => {
                 let balance = self.balance - payload.amount;
                 if balance < 0_f64 {
                     return Err(AggregateError::new("funds not available"));
                 }
-                let event_payload = CustomerWroteCheck {
+                Ok(vec![BankAccountEvent::CustomerWroteCheck {
                     check_number: payload.check_number,
                     amount: payload.amount,
                     balance,
-                };
-                Ok(vec![BankAccountEvent::CustomerWroteCheck(event_payload)])
+                }])
             }
         }
     }
 
-    fn apply(&mut self, event: &Self::Event) {
+    fn apply(&mut self, event: Self::Event) {
         match event {
-            BankAccountEvent::AccountOpened(e) => {
-                self.account_id = e.account_id.clone();
+            BankAccountEvent::AccountOpened { account_id } => {
+                self.account_id = account_id;
             }
-            BankAccountEvent::CustomerDepositedMoney(e) => {
-                self.balance = e.balance;
+            BankAccountEvent::CustomerDepositedMoney { amount: _, balance } => {
+                self.balance = balance;
             }
-            BankAccountEvent::CustomerWithdrewCash(e) => {
-                self.balance = e.balance;
+            BankAccountEvent::CustomerWithdrewCash { amount: _, balance } => {
+                self.balance = balance;
             }
-            BankAccountEvent::CustomerWroteCheck(e) => {
-                self.balance = e.balance;
+            BankAccountEvent::CustomerWroteCheck {
+                check_number: _,
+                amount: _,
+                balance,
+            } => {
+                self.balance = balance;
             }
         }
     }
@@ -98,18 +91,16 @@ mod aggregate_tests {
 
     use crate::aggregate::BankAccount;
     use crate::commands::{BankAccountCommand, DepositMoney, WithdrawMoney, WriteCheck};
-    use crate::events::{
-        BankAccountEvent, CustomerDepositedMoney, CustomerWithdrewCash, CustomerWroteCheck,
-    };
+    use crate::events::BankAccountEvent;
 
     type AccountTestFramework = TestFramework<BankAccount>;
 
     #[test]
     fn test_deposit_money() {
-        let expected = BankAccountEvent::CustomerDepositedMoney(CustomerDepositedMoney {
+        let expected = BankAccountEvent::CustomerDepositedMoney {
             amount: 200.0,
             balance: 200.0,
-        });
+        };
         AccountTestFramework::default()
             .given_no_previous_events()
             .when(BankAccountCommand::DepositMoney(DepositMoney {
@@ -120,14 +111,14 @@ mod aggregate_tests {
 
     #[test]
     fn test_deposit_money_with_balance() {
-        let previous = BankAccountEvent::CustomerDepositedMoney(CustomerDepositedMoney {
+        let previous = BankAccountEvent::CustomerDepositedMoney {
             amount: 200.0,
             balance: 200.0,
-        });
-        let expected = BankAccountEvent::CustomerDepositedMoney(CustomerDepositedMoney {
+        };
+        let expected = BankAccountEvent::CustomerDepositedMoney {
             amount: 200.0,
             balance: 400.0,
-        });
+        };
         AccountTestFramework::default()
             .given(vec![previous])
             .when(BankAccountCommand::DepositMoney(DepositMoney {
@@ -138,14 +129,14 @@ mod aggregate_tests {
 
     #[test]
     fn test_withdraw_money() {
-        let previous = BankAccountEvent::CustomerDepositedMoney(CustomerDepositedMoney {
+        let previous = BankAccountEvent::CustomerDepositedMoney {
             amount: 200.0,
             balance: 200.0,
-        });
-        let expected = BankAccountEvent::CustomerWithdrewCash(CustomerWithdrewCash {
+        };
+        let expected = BankAccountEvent::CustomerWithdrewCash {
             amount: 100.0,
             balance: 100.0,
-        });
+        };
         AccountTestFramework::default()
             .given(vec![previous])
             .when(BankAccountCommand::WithdrawMoney(WithdrawMoney {
@@ -166,15 +157,15 @@ mod aggregate_tests {
 
     #[test]
     fn test_wrote_check() {
-        let previous = BankAccountEvent::CustomerDepositedMoney(CustomerDepositedMoney {
+        let previous = BankAccountEvent::CustomerDepositedMoney {
             amount: 200.0,
             balance: 200.0,
-        });
-        let expected = BankAccountEvent::CustomerWroteCheck(CustomerWroteCheck {
+        };
+        let expected = BankAccountEvent::CustomerWroteCheck {
             check_number: "1170".to_string(),
             amount: 100.0,
             balance: 100.0,
-        });
+        };
         AccountTestFramework::default()
             .given(vec![previous])
             .when(BankAccountCommand::WriteCheck(WriteCheck {
