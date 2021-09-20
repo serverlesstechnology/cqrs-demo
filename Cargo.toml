@@ -5,8 +5,11 @@ authors = ["Dave Garred <dave.garred@serverlesstechnology.com>"]
 edition = "2018"
 
 [dependencies]
-cqrs-es = "0.1.2"
-postgres-es = "0.1.2"
+
+cqrs-es = {version="0.1.2", path="../cqrs"}
+postgres-es = {version="0.1.2", path="../postgres-es"}
+#cqrs-es = "0.1.2"
+#postgres-es = "0.1.2"
 
 serde = { version = "1.0.104", features = ["derive"]}
 serde_json = "1.0"
@@ -15,3 +18,5 @@ router = "*"
 postgres = {version = "0.15.2", features = ["with-serde_json"]}
 postgres-shared = "0.4.2"
 chrono = "0.4.11"
+tokio = { version = "1", features = ["full"] }
+warp = "0.3"

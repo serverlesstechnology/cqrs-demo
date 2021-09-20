@@ -5,7 +5,7 @@ use iron::{typemap, BeforeMiddleware, IronResult, Request};
 use postgres_es::{Connection, GenericQueryRepository, PostgresCqrs};
 use std::sync::Arc;
 
-type AccountQuery = GenericQueryRepository<BankAccountQuery, BankAccount>;
+pub type AccountQuery = GenericQueryRepository<BankAccountQuery, BankAccount>;
 
 fn cqrs_framework() -> PostgresCqrs<BankAccount> {
     let simple_query = SimpleLoggingQueryProcessor {};
@@ -36,10 +36,10 @@ impl CqrsMiddleware {
             account_query,
         }
     }
-    fn command_service(&self) -> Arc<CommandService> {
+    pub fn command_service(&self) -> Arc<CommandService> {
         self.command_service.clone()
     }
-    fn query_service(&self) -> Arc<AccountQuery> {
+    pub fn query_service(&self) -> Arc<AccountQuery> {
         self.account_query.clone()
     }
 }
