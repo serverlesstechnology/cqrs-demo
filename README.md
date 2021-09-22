@@ -34,3 +34,9 @@ For feedback on state you should call a query.
 
 [Documentation can be found here](https://doc.rust-cqrs.org/)
  for the CQRS and event sourcing portions of this demo application. 
+
+## Change log
+
+#### `v0.1.3` 
+Update to latest version of cqrs framework.
+
