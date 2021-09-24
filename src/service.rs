@@ -28,6 +28,7 @@ impl CommandService {
         let mut metadata = HashMap::new();
         metadata.insert("time".to_string(), chrono::Utc::now().to_rfc3339());
         self.cqrs
-            .execute_with_metadata(aggregate_id, payload, metadata).await
+            .execute_with_metadata(aggregate_id, payload, metadata)
+            .await
     }
 }

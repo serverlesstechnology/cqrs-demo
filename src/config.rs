@@ -2,9 +2,9 @@ use crate::aggregate::BankAccount;
 use crate::queries::{BankAccountQuery, SimpleLoggingQueryProcessor};
 use crate::service::CommandService;
 use iron::{typemap, BeforeMiddleware, IronResult, Request};
-use std::sync::Arc;
-use postgres_es::{GenericQueryRepository, PostgresCqrs, default_postgress_pool};
+use postgres_es::{default_postgress_pool, GenericQueryRepository, PostgresCqrs};
 use sqlx::{Pool, Postgres};
+use std::sync::Arc;
 
 pub type AccountQuery = GenericQueryRepository<BankAccountQuery, BankAccount>;
 
@@ -26,7 +26,8 @@ pub struct ServiceInjector {
 
 impl ServiceInjector {
     pub async fn configured() -> Self {
-        let pool = default_postgress_pool("postgresql://demo_user:demo_pass@localhost:5432/demo").await;
+        let pool =
+            default_postgress_pool("postgresql://demo_user:demo_pass@localhost:5432/demo").await;
         let command_service = Arc::new(CommandService::new(cqrs_framework(pool.clone())));
         let account_query = Arc::new(AccountQuery::new("account_query", pool));
         Self {
