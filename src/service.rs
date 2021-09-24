@@ -12,7 +12,7 @@ impl CommandService {
         Self { cqrs }
     }
 
-    pub fn process_command(
+    pub async fn process_command(
         &self,
         payload_type: &str,
         aggregate_id: &str,
@@ -28,6 +28,6 @@ impl CommandService {
         let mut metadata = HashMap::new();
         metadata.insert("time".to_string(), chrono::Utc::now().to_rfc3339());
         self.cqrs
-            .execute_with_metadata(aggregate_id, payload, metadata)
+            .execute_with_metadata(aggregate_id, payload, metadata).await
     }
 }
