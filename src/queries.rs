@@ -1,14 +1,14 @@
 use async_trait::async_trait;
-use cqrs_es::{EventEnvelope, Query, QueryProcessor};
+use cqrs_es::{EventEnvelope, View, Query};
 use serde::{Deserialize, Serialize};
 
 use crate::aggregate::BankAccount;
 use crate::events::BankAccountEvent;
 
-pub struct SimpleLoggingQueryProcessor {}
+pub struct SimpleLoggingQuery {}
 
 #[async_trait]
-impl QueryProcessor<BankAccount> for SimpleLoggingQueryProcessor {
+impl Query<BankAccount> for SimpleLoggingQuery {
     async fn dispatch(&self, aggregate_id: &str, events: &[EventEnvelope<BankAccount>]) {
         for event in events {
             let payload = serde_json::to_string_pretty(&event.payload).unwrap();
@@ -18,13 +18,13 @@ impl QueryProcessor<BankAccount> for SimpleLoggingQueryProcessor {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct BankAccountQuery {
+pub struct BankAccountView {
     account_id: Option<String>,
     balance: f64,
     written_checks: Vec<String>,
 }
 
-impl Query<BankAccount> for BankAccountQuery {
+impl View<BankAccount> for BankAccountView {
     fn update(&mut self, event: &EventEnvelope<BankAccount>) {
         match &event.payload {
             BankAccountEvent::AccountOpened { account_id } => {
@@ -48,9 +48,9 @@ impl Query<BankAccount> for BankAccountQuery {
     }
 }
 
-impl Default for BankAccountQuery {
+impl Default for BankAccountView {
     fn default() -> Self {
-        BankAccountQuery {
+        BankAccountView {
             account_id: None,
             balance: 0_f64,
             written_checks: Default::default(),

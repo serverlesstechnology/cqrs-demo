@@ -1,15 +1,15 @@
 use crate::aggregate::BankAccount;
-use crate::queries::{BankAccountQuery, SimpleLoggingQueryProcessor};
+use crate::queries::{BankAccountView, SimpleLoggingQuery};
 use crate::service::CommandService;
 use iron::{typemap, BeforeMiddleware, IronResult, Request};
-use postgres_es::{default_postgress_pool, GenericQueryRepository, PostgresCqrs};
+use postgres_es::{default_postgress_pool, GenericQuery, PostgresCqrs};
 use sqlx::{Pool, Postgres};
 use std::sync::Arc;
 
-pub type AccountQuery = GenericQueryRepository<BankAccountQuery, BankAccount>;
+pub type AccountQuery = GenericQuery<BankAccountView, BankAccount>;
 
 fn cqrs_framework(pool: Pool<Postgres>) -> PostgresCqrs<BankAccount> {
-    let simple_query = SimpleLoggingQueryProcessor {};
+    let simple_query = SimpleLoggingQuery {};
     let mut account_query_processor = AccountQuery::new("account_query", pool.clone());
     account_query_processor.with_error_handler(Box::new(|e| println!("{}", e)));
 
