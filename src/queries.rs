@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use cqrs_es::{EventEnvelope, View, Query};
+use cqrs_es::{EventEnvelope, Query, View};
 use serde::{Deserialize, Serialize};
 
 use crate::aggregate::BankAccount;

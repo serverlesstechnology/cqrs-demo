@@ -1,22 +1,29 @@
+use std::sync::Arc;
+
+use cqrs_es::Query;
+use postgres_es::{default_postgress_pool, GenericQuery, PostgresCqrs};
+use sqlx::{Pool, Postgres};
+
 use crate::aggregate::BankAccount;
 use crate::queries::{BankAccountView, SimpleLoggingQuery};
 use crate::service::CommandService;
-use iron::{typemap, BeforeMiddleware, IronResult, Request};
-use postgres_es::{default_postgress_pool, GenericQuery, PostgresCqrs};
-use sqlx::{Pool, Postgres};
-use std::sync::Arc;
 
 pub type AccountQuery = GenericQuery<BankAccountView, BankAccount>;
 
-fn cqrs_framework(pool: Pool<Postgres>) -> PostgresCqrs<BankAccount> {
+pub fn cqrs_framework(pool: Pool<Postgres>) -> PostgresCqrs<BankAccount> {
+    // A very simple query that simply writes each event to stdout.
     let simple_query = SimpleLoggingQuery {};
-    let mut account_query_processor = AccountQuery::new("account_query", pool.clone());
-    account_query_processor.with_error_handler(Box::new(|e| println!("{}", e)));
 
-    postgres_es::postgres_cqrs(
-        pool,
-        vec![Box::new(simple_query), Box::new(account_query_processor)],
-    )
+    // A query that stores the current state of an individual account.
+    let mut account_query = AccountQuery::new("account_query", pool.clone());
+    // It's essential to add an error handler. Without one the user will have no indication if an
+    // error occurs (e.g., database connection failure, missing columns or table).
+    account_query.use_error_handler(Box::new(|e| println!("{}", e)));
+
+    // Create and return an event-sourced `CqrsFramework`.
+    let queries: Vec<Box<dyn Query<BankAccount>>> =
+        vec![Box::new(simple_query), Box::new(account_query)];
+    postgres_es::postgres_cqrs(pool, queries)
 }
 
 pub struct ServiceInjector {
@@ -41,24 +48,4 @@ impl ServiceInjector {
     pub fn query_service(&self) -> Arc<AccountQuery> {
         self.account_query.clone()
     }
-}
-
-impl BeforeMiddleware for ServiceInjector {
-    fn before(&self, req: &mut Request) -> IronResult<()> {
-        req.extensions
-            .insert::<CommandServiceKey>(self.command_service());
-        req.extensions
-            .insert::<AccountQueryKey>(self.query_service());
-        Ok(())
-    }
-}
-
-pub struct CommandServiceKey {}
-impl typemap::Key for CommandServiceKey {
-    type Value = Arc<CommandService>;
-}
-
-pub struct AccountQueryKey {}
-impl typemap::Key for AccountQueryKey {
-    type Value = Arc<AccountQuery>;
 }
