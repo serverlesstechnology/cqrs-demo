@@ -21,14 +21,22 @@ mod service;
 
 #[tokio::main]
 async fn main() {
+    // Configure the CQRS framework using a Postgres database and two queries.
+    // Database should automatically configure with `docker-compose up -d`,
+    // see init file at `/db/init.sql` for more.
     let services = ServiceInjector::configured().await;
 
+    // Configure the query endpoint at `GET /account/{{accountId}}
+    // This will load a view for the sumbitted `accountId` to add to the respoonse.
     let query = warp::get()
         .and(warp::path("account"))
         .and(warp::path::param())
         .and(with_query(services.query_service()))
         .and_then(query_handler);
 
+    // Configure the command endpoint at `POST /account/:commandName/:accountId`
+    // Response is a 206 status if successful or a 400 with error message if the command fails.
+    // For a failure example, try withdrawing more money than is available.
     let command = warp::post()
         .and(warp::path("account"))
         .and(warp::path::param())
@@ -37,9 +45,12 @@ async fn main() {
         .and(with_command(services.command_service()))
         .and_then(command_handler);
 
+    // Combines the command and query routes and starts a
+    // [warp server](https://github.com/seanmonstar/warp).
     let routes = warp::any().and(query).or(command);
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await
 }
+
 fn with_query(
     query: Arc<AccountQuery>,
 ) -> impl Filter<Extract = (Arc<AccountQuery>,), Error = Infallible> + Clone {
@@ -52,11 +63,15 @@ fn with_command(
     warp::any().map(move || command_service.clone())
 }
 
+// Serves as our query endpoint to respond with the materialized BankAccountView
+// for the requested account.
 async fn query_handler(
-    query_id: String,
+    // The requested account id, injected by warp from the path parameter.
+    account_id: String,
+    // The account query repository, injected by warp from the configured `with_query` method.
     query_repo: Arc<AccountQuery>,
 ) -> std::result::Result<impl Reply, Rejection> {
-    let response = match query_repo.load(query_id).await {
+    let response = match query_repo.load(account_id).await {
         None => Response::builder()
             .status(StatusCode::NOT_FOUND)
             .body(Body::empty()),
@@ -67,25 +82,31 @@ async fn query_handler(
     };
     Ok(response)
 }
+
+// Serves as our commabd endpoint to make changes in our `BankAccount` aggregate
+// for the requested account.
 async fn command_handler(
     command_type: String,
-    aggregate_id: String,
+    // The requested account id, injected by warp from the path parameter.
+    account_id: String,
+    // The body of the request, injected by warp.
     payload: Bytes,
+    // A command service for handling commands, injected by warp from the configured `with_command` method.
     command_service: Arc<CommandService>,
 ) -> std::result::Result<impl Reply, Rejection> {
     let payload = std::str::from_utf8(payload.as_ref()).unwrap().to_string();
     let result = match command_type.as_str() {
         "openAccount" => {
-            command_service.process_command("OpenAccount", aggregate_id.as_str(), payload)
+            command_service.process_command("OpenAccount", account_id.as_str(), payload)
         }
         "depositMoney" => {
-            command_service.process_command("DepositMoney", aggregate_id.as_str(), payload)
+            command_service.process_command("DepositMoney", account_id.as_str(), payload)
         }
         "withdrawMoney" => {
-            command_service.process_command("WithdrawMoney", aggregate_id.as_str(), payload)
+            command_service.process_command("WithdrawMoney", account_id.as_str(), payload)
         }
         "writeCheck" => {
-            command_service.process_command("WriteCheck", aggregate_id.as_str(), payload)
+            command_service.process_command("WriteCheck", account_id.as_str(), payload)
         }
         _ => {
             return Ok(Response::builder()
@@ -108,10 +129,3 @@ async fn command_handler(
         }
     }
 }
-
-// fn std_headers() -> Headers {
-//     let mut headers = Headers::new();
-//     let content_type = iron::headers::ContentType::json();
-//     headers.set(content_type);
-//     headers
-// }
