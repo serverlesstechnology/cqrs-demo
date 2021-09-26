@@ -14,40 +14,43 @@ impl Aggregate for BankAccount {
     type Command = BankAccountCommand;
     type Event = BankAccountEvent;
 
+    // This identifier should be unique to the system.
     fn aggregate_type() -> &'static str {
         "account"
     }
 
+    // The aggregate logic goes here. Note that this will be the _bulk_ of a CQRS system
+    // so expect to use helper functions elsewhere to keep the code clean.
     fn handle(&self, command: Self::Command) -> Result<Vec<Self::Event>, AggregateError> {
         match command {
-            BankAccountCommand::OpenAccount(payload) => Ok(vec![BankAccountEvent::AccountOpened {
-                account_id: payload.account_id,
-            }]),
-            BankAccountCommand::DepositMoney(payload) => {
-                let balance = self.balance + payload.amount;
+            BankAccountCommand::OpenAccount { account_id } => {
+                Ok(vec![BankAccountEvent::AccountOpened { account_id }])
+            }
+            BankAccountCommand::DepositMoney{amount} => {
+                let balance = self.balance + amount;
                 Ok(vec![BankAccountEvent::CustomerDepositedMoney {
-                    amount: payload.amount,
+                    amount,
                     balance,
                 }])
             }
-            BankAccountCommand::WithdrawMoney(payload) => {
-                let balance = self.balance - payload.amount;
+            BankAccountCommand::WithdrawMoney{amount} => {
+                let balance = self.balance - amount;
                 if balance < 0_f64 {
                     return Err(AggregateError::new("funds not available"));
                 }
                 Ok(vec![BankAccountEvent::CustomerWithdrewCash {
-                    amount: payload.amount,
+                    amount,
                     balance,
                 }])
             }
-            BankAccountCommand::WriteCheck(payload) => {
-                let balance = self.balance - payload.amount;
+            BankAccountCommand::WriteCheck{check_number, amount} => {
+                let balance = self.balance - amount;
                 if balance < 0_f64 {
                     return Err(AggregateError::new("funds not available"));
                 }
                 Ok(vec![BankAccountEvent::CustomerWroteCheck {
-                    check_number: payload.check_number,
-                    amount: payload.amount,
+                    check_number,
+                    amount,
                     balance,
                 }])
             }

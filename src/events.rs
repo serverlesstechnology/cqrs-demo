@@ -21,4 +21,5 @@ pub enum BankAccountEvent {
     },
 }
 
+// `DomainEvent` is a marker trait used to enforce the needed trait bounds.
 impl DomainEvent for BankAccountEvent {}
