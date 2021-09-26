@@ -14,16 +14,11 @@ impl CommandService {
 
     pub async fn process_command(
         &self,
-        payload_type: &str,
         aggregate_id: &str,
-        payload: String,
+        payload: &[u8],
     ) -> Result<(), AggregateError> {
-        // The serialization method used requires some formatting to deserialize the inbound
-        // payload into the correct `BankAccountCommand` enum.
-        // TODO: add helper methods to reduce this complexity
-        let event_ser = format!("{{\"{}\":{}}}", payload_type, payload);
         // Deserialize the payload into a `BankAccountCommand`.
-        let payload = match serde_json::from_str(event_ser.as_str()) {
+        let payload = match serde_json::from_slice(payload) {
             Ok(payload) => payload,
             Err(err) => {
                 return Err(AggregateError::TechnicalError(err.to_string()));

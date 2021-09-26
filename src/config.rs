@@ -1,14 +1,12 @@
 use std::sync::Arc;
 
 use cqrs_es::Query;
-use postgres_es::{default_postgress_pool, GenericQuery, PostgresCqrs};
+use postgres_es::{default_postgress_pool, PostgresCqrs};
 use sqlx::{Pool, Postgres};
 
 use crate::aggregate::BankAccount;
-use crate::queries::{BankAccountView, SimpleLoggingQuery};
+use crate::queries::{AccountQuery, SimpleLoggingQuery};
 use crate::service::CommandService;
-
-pub type AccountQuery = GenericQuery<BankAccountView, BankAccount>;
 
 pub fn cqrs_framework(pool: Pool<Postgres>) -> PostgresCqrs<BankAccount> {
     // A very simple query that simply writes each event to stdout.
