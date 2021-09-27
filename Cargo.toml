@@ -6,10 +6,8 @@ edition = "2018"
 
 [dependencies]
 
-cqrs-es = {version="0.2.0", path="../cqrs"}
-postgres-es = {version="0.2.0", path="../postgres-es"}
-#cqrs-es = "0.2.0"
-#postgres-es = "0.2.0"
+cqrs-es = "0.2.0"
+postgres-es = "0.2.0"
 
 async-trait = "0.1.51"
 serde = { version = "1.0.104", features = ["derive"]}

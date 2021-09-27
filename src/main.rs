@@ -36,7 +36,7 @@ async fn main() {
         .and_then(query_handler);
 
     // Configure the command endpoint at `POST /account/:accountId`
-    // Response is a 206 status if successful or a 400 with error message if the command fails.
+    // Response is a 204 status if successful or a 400 with error message if the command fails.
     // For a failure example, try withdrawing more money than is available.
     let command = warp::post()
         .and(warp::path("account"))
