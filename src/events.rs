@@ -21,4 +21,17 @@ pub enum BankAccountEvent {
     },
 }
 
-impl DomainEvent for BankAccountEvent {}
+impl DomainEvent for BankAccountEvent {
+    fn event_type(&self) -> &'static str {
+        match self {
+            BankAccountEvent::AccountOpened { .. } => "AccountOpened",
+            BankAccountEvent::CustomerDepositedMoney { .. } => "CustomerDepositedMoney",
+            BankAccountEvent::CustomerWithdrewCash { .. } => "CustomerWithdrewCash",
+            BankAccountEvent::CustomerWroteCheck { .. } => "CustomerWroteCheck",
+        }
+    }
+
+    fn event_version(&self) -> &'static str {
+        "1.0"
+    }
+}

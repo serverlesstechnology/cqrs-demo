@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "04cb6170-2cc0-46e1-84ba-45557e8659a2",
+		"_postman_id": "71486332-7d3b-46ce-85cb-f4c90864f3f2",
 		"name": "cqrs-demo",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -11,7 +11,6 @@
 				{
 					"listen": "prerequest",
 					"script": {
-						"id": "344cf38e-966b-480f-b4a9-b3e133a5b708",
 						"exec": [
 							"pm.globals.set(\"account_id\", \"ACCT-\" + (Math.random().toString(16)+\"000000000\").substr(2,8));"
 						],
@@ -24,7 +23,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"account_id\": \"{{account_id}}\"\n}",
+					"raw": "{\n    \"OpenAccount\": {\n        \"account_id\": \"{{account_id}}\"\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -32,14 +31,13 @@
 					}
 				},
 				"url": {
-					"raw": "localhost:3030/account/openAccount/{{account_id}}",
+					"raw": "localhost:3030/account/{{account_id}}",
 					"host": [
 						"localhost"
 					],
 					"port": "3030",
 					"path": [
 						"account",
-						"openAccount",
 						"{{account_id}}"
 					]
 				}
@@ -53,7 +51,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"amount\": 1000.0\n}",
+					"raw": "{\n    \"DepositMoney\": {\n        \"amount\": 1000.0\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -61,14 +59,13 @@
 					}
 				},
 				"url": {
-					"raw": "localhost:3030/account/depositMoney/{{account_id}}",
+					"raw": "localhost:3030/account/{{account_id}}",
 					"host": [
 						"localhost"
 					],
 					"port": "3030",
 					"path": [
 						"account",
-						"depositMoney",
 						"{{account_id}}"
 					]
 				}
@@ -82,7 +79,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"amount\": 400.0\n}",
+					"raw": "{\n    \"WithdrawMoney\": {\n        \"amount\": 400.0\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -90,14 +87,13 @@
 					}
 				},
 				"url": {
-					"raw": "localhost:3030/account/withdrawMoney/{{account_id}}",
+					"raw": "localhost:3030/account/{{account_id}}",
 					"host": [
 						"localhost"
 					],
 					"port": "3030",
 					"path": [
 						"account",
-						"withdrawMoney",
 						"{{account_id}}"
 					]
 				}
@@ -111,7 +107,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"check_number\": \"1170\",\n\t\"amount\": 256.28\n}",
+					"raw": "{\n    \"WriteCheck\": {\n        \"check_number\": \"1170\",\n        \"amount\": 256.28\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -119,14 +115,13 @@
 					}
 				},
 				"url": {
-					"raw": "localhost:3030/account/writeCheck/{{account_id}}",
+					"raw": "localhost:3030/account/{{account_id}}",
 					"host": [
 						"localhost"
 					],
 					"port": "3030",
 					"path": [
 						"account",
-						"writeCheck",
 						"{{account_id}}"
 					]
 				}
@@ -164,6 +159,5 @@
 			},
 			"response": []
 		}
-	],
-	"protocolProfileBehavior": {}
+	]
 }

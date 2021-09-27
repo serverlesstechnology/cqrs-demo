@@ -12,22 +12,23 @@ impl CommandService {
         Self { cqrs }
     }
 
-    pub fn process_command(
+    pub async fn process_command(
         &self,
-        payload_type: &str,
         aggregate_id: &str,
-        payload: String,
+        payload: &[u8],
     ) -> Result<(), AggregateError> {
-        let event_ser = format!("{{\"{}\":{}}}", payload_type, payload);
-        let payload = match serde_json::from_str(event_ser.as_str()) {
+        // Deserialize the payload into a `BankAccountCommand`.
+        let payload = match serde_json::from_slice(payload) {
             Ok(payload) => payload,
             Err(err) => {
                 return Err(AggregateError::TechnicalError(err.to_string()));
             }
         };
         let mut metadata = HashMap::new();
+        // TODO: add additional metadata from the request headers
         metadata.insert("time".to_string(), chrono::Utc::now().to_rfc3339());
         self.cqrs
             .execute_with_metadata(aggregate_id, payload, metadata)
+            .await
     }
 }

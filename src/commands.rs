@@ -1,30 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum BankAccountCommand {
-    OpenAccount(OpenAccount),
-    DepositMoney(DepositMoney),
-    WithdrawMoney(WithdrawMoney),
-    WriteCheck(WriteCheck),
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct OpenAccount {
-    pub account_id: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct DepositMoney {
-    pub amount: f64,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct WithdrawMoney {
-    pub amount: f64,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct WriteCheck {
-    pub check_number: String,
-    pub amount: f64,
+    OpenAccount { account_id: String },
+    DepositMoney { amount: f64 },
+    WithdrawMoney { amount: f64 },
+    WriteCheck { check_number: String, amount: f64 },
 }

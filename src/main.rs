@@ -1,89 +1,114 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all)]
 
-use std::io::Read;
-
 use cqrs_es::AggregateError;
-use iron::{status, Chain, Headers, Iron, IronResult, Request, Response};
-use router::Router;
+use warp::{http::Response, Rejection, Reply};
 
-use crate::config::{AccountQueryKey, CommandServiceKey, CqrsMiddleware};
+use crate::config::ServiceInjector;
+use crate::queries::AccountQuery;
+use crate::service::CommandService;
+use std::convert::Infallible;
+use std::sync::Arc;
+use warp::hyper::body::Bytes;
+use warp::hyper::{Body, StatusCode};
+use warp::Filter;
 
 mod aggregate;
-mod application;
 mod commands;
 mod config;
 mod events;
 mod queries;
 mod service;
 
-fn main() {
-    let mut router = Router::new();
-    router.get("/account/:query_id", account_query, "account_query");
-    router.post(
-        "/account/:command_type/:aggregate_id",
-        account_command,
-        "account_command",
-    );
-    let mut chain = Chain::new(router);
-    let cqrs = CqrsMiddleware::configured();
-    chain.link_before(cqrs);
-    println!("Starting server at http://localhost:3030");
-    Iron::new(chain).http("localhost:3030").unwrap();
+#[tokio::main]
+async fn main() {
+    // Configure the CQRS framework using a Postgres database and two queries.
+    // Database should automatically configure with `docker-compose up -d`,
+    // see init file at `/db/init.sql` for more.
+    let services = ServiceInjector::configured().await;
+
+    // Configure the query endpoint at `GET /account/{{accountId}}
+    // This will load a view for the sumbitted `accountId` to add to the respoonse.
+    let query = warp::get()
+        .and(warp::path("account"))
+        .and(warp::path::param())
+        .and(with_query(services.query_service()))
+        .and_then(query_handler);
+
+    // Configure the command endpoint at `POST /account/:accountId`
+    // Response is a 204 status if successful or a 400 with error message if the command fails.
+    // For a failure example, try withdrawing more money than is available.
+    let command = warp::post()
+        .and(warp::path("account"))
+        .and(warp::path::param())
+        .and(warp::body::bytes())
+        .and(with_command(services.command_service()))
+        .and_then(command_handler);
+
+    // Combines the command and query routes and starts a warp server.
+    let routes = warp::any().and(query).or(command);
+    warp::serve(routes).run(([127, 0, 0, 1], 3030)).await
 }
 
-pub fn account_command(req: &mut Request) -> IronResult<Response> {
-    let command_service = req.extensions.get::<CommandServiceKey>().unwrap();
-    let params = req.extensions.get::<Router>().unwrap();
-    let command_type = params.find("command_type").unwrap_or("");
-    let aggregate_id = params.find("aggregate_id").unwrap_or("");
-    let mut payload = String::new();
-    req.body.read_to_string(&mut payload).unwrap();
-    let result = match command_type {
-        "openAccount" => command_service.process_command("OpenAccount", aggregate_id, payload),
-        "depositMoney" => command_service.process_command("DepositMoney", aggregate_id, payload),
-        "withdrawMoney" => command_service.process_command("WithdrawMoney", aggregate_id, payload),
-        "writeCheck" => command_service.process_command("WriteCheck", aggregate_id, payload),
-        _ => return Ok(Response::with(status::NotFound)),
+fn with_query(
+    query: Arc<AccountQuery>,
+) -> impl Filter<Extract = (Arc<AccountQuery>,), Error = Infallible> + Clone {
+    warp::any().map(move || query.clone())
+}
+
+fn with_command(
+    command_service: Arc<CommandService>,
+) -> impl Filter<Extract = (Arc<CommandService>,), Error = Infallible> + Clone {
+    warp::any().map(move || command_service.clone())
+}
+
+// Serves as our query endpoint to respond with the materialized BankAccountView
+// for the requested account.
+async fn query_handler(
+    // The requested account id, injected by warp from the path parameter.
+    account_id: String,
+    // The account query repository, injected by warp from the configured `with_query` method.
+    query_repo: Arc<AccountQuery>,
+) -> std::result::Result<impl Reply, Rejection> {
+    let response = match query_repo.load(account_id).await {
+        None => Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .body(Body::empty()),
+        Some(query) => {
+            let body = serde_json::to_string(&query).unwrap();
+            Response::builder()
+                .header(warp::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from(body))
+        }
     };
-    match result {
-        Ok(_) => Ok(Response::with(status::NoContent)),
+    Ok(response)
+}
+
+// Serves as our command endpoint to make changes in our `BankAccount` aggregate
+// for the requested account.
+async fn command_handler(
+    // The requested account id, injected by warp from the path parameter.
+    account_id: String,
+    // The body of the request, injected by warp.
+    payload: Bytes,
+    // A command service for handling commands, injected by warp from the configured `with_command` method.
+    command_service: Arc<CommandService>,
+) -> std::result::Result<impl Reply, Rejection> {
+    let payload = std::str::from_utf8(payload.as_ref()).unwrap().to_string();
+    let result = command_service.process_command(account_id.as_str(), payload.as_bytes());
+    match result.await {
+        Ok(_) => Ok(Response::builder()
+            .status(StatusCode::NO_CONTENT)
+            .body(Body::empty())),
         Err(err) => {
             let err_payload = match &err {
                 AggregateError::UserError(e) => serde_json::to_string(e).unwrap(),
                 AggregateError::TechnicalError(e) => e.clone(),
             };
-            let mut response = Response::with((status::BadRequest, err_payload));
-            response.headers = std_headers();
-            Ok(response)
+            Ok(Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .header(warp::http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from(err_payload)))
         }
     }
-}
-
-pub fn account_query(req: &mut Request) -> IronResult<Response> {
-    let query_id = req
-        .extensions
-        .get::<Router>()
-        .unwrap()
-        .find("query_id")
-        .unwrap_or("")
-        .to_string();
-
-    let query_repo = req.extensions.get::<AccountQueryKey>().unwrap();
-    match query_repo.load(query_id) {
-        None => Ok(Response::with(status::NotFound)),
-        Some(query) => {
-            let body = serde_json::to_string(&query).unwrap();
-            let mut response = Response::with((status::Ok, body));
-            response.headers = std_headers();
-            Ok(response)
-        }
-    }
-}
-
-fn std_headers() -> Headers {
-    let mut headers = Headers::new();
-    let content_type = iron::headers::ContentType::json();
-    headers.set(content_type);
-    headers
 }
