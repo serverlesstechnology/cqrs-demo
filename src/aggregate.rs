@@ -26,14 +26,14 @@ impl Aggregate for BankAccount {
             BankAccountCommand::OpenAccount { account_id } => {
                 Ok(vec![BankAccountEvent::AccountOpened { account_id }])
             }
-            BankAccountCommand::DepositMoney{amount} => {
+            BankAccountCommand::DepositMoney { amount } => {
                 let balance = self.balance + amount;
                 Ok(vec![BankAccountEvent::CustomerDepositedMoney {
                     amount,
                     balance,
                 }])
             }
-            BankAccountCommand::WithdrawMoney{amount} => {
+            BankAccountCommand::WithdrawMoney { amount } => {
                 let balance = self.balance - amount;
                 if balance < 0_f64 {
                     return Err(AggregateError::new("funds not available"));
@@ -43,7 +43,7 @@ impl Aggregate for BankAccount {
                     balance,
                 }])
             }
-            BankAccountCommand::WriteCheck{check_number, amount} => {
+            BankAccountCommand::WriteCheck { check_number, amount } => {
                 let balance = self.balance - amount;
                 if balance < 0_f64 {
                     return Err(AggregateError::new("funds not available"));
@@ -88,14 +88,19 @@ impl Default for BankAccount {
     }
 }
 
+// The aggregate tests are the most important part of a CQRS system.
+// The simplicity and flexibility of these tests are a good part of what
+// makes an event sourced system so friendly to changing business requirements.
 #[cfg(test)]
 mod aggregate_tests {
     use cqrs_es::test::TestFramework;
 
     use crate::aggregate::BankAccount;
-    use crate::commands::{BankAccountCommand, DepositMoney, WithdrawMoney, WriteCheck};
+    use crate::commands::BankAccountCommand;
     use crate::events::BankAccountEvent;
 
+    // A test framework that will apply our events and command
+    // and verify that the logic works as expected.
     type AccountTestFramework = TestFramework<BankAccount>;
 
     #[test]
@@ -104,11 +109,15 @@ mod aggregate_tests {
             amount: 200.0,
             balance: 200.0,
         };
+        // Obtain a new test framework
         AccountTestFramework::default()
+            // In a test case with no previous events
             .given_no_previous_events()
-            .when(BankAccountCommand::DepositMoney(DepositMoney {
+            // Wnen we fire this command
+            .when(BankAccountCommand::DepositMoney {
                 amount: 200.0,
-            }))
+            })
+            // then we expect these results
             .then_expect_events(vec![expected]);
     }
 
@@ -123,10 +132,13 @@ mod aggregate_tests {
             balance: 400.0,
         };
         AccountTestFramework::default()
+            // Given this previously applied event
             .given(vec![previous])
-            .when(BankAccountCommand::DepositMoney(DepositMoney {
+            // When we fire this command
+            .when(BankAccountCommand::DepositMoney {
                 amount: 200.0,
-            }))
+            })
+            // Then we expect this resultant event
             .then_expect_events(vec![expected]);
     }
 
@@ -142,9 +154,9 @@ mod aggregate_tests {
         };
         AccountTestFramework::default()
             .given(vec![previous])
-            .when(BankAccountCommand::WithdrawMoney(WithdrawMoney {
+            .when(BankAccountCommand::WithdrawMoney {
                 amount: 100.0,
-            }))
+            })
             .then_expect_events(vec![expected]);
     }
 
@@ -152,9 +164,10 @@ mod aggregate_tests {
     fn test_withdraw_money_funds_not_available() {
         AccountTestFramework::default()
             .given_no_previous_events()
-            .when(BankAccountCommand::WithdrawMoney(WithdrawMoney {
+            .when(BankAccountCommand::WithdrawMoney {
                 amount: 200.0,
-            }))
+            })
+            // Here we expect an error rather than any events
             .then_expect_error("funds not available")
     }
 
@@ -171,10 +184,10 @@ mod aggregate_tests {
         };
         AccountTestFramework::default()
             .given(vec![previous])
-            .when(BankAccountCommand::WriteCheck(WriteCheck {
+            .when(BankAccountCommand::WriteCheck {
                 check_number: "1170".to_string(),
                 amount: 100.0,
-            }))
+            })
             .then_expect_events(vec![expected]);
     }
 
@@ -182,10 +195,10 @@ mod aggregate_tests {
     fn test_wrote_check_funds_not_available() {
         AccountTestFramework::default()
             .given_no_previous_events()
-            .when(BankAccountCommand::WriteCheck(WriteCheck {
+            .when(BankAccountCommand::WriteCheck {
                 check_number: "1170".to_string(),
                 amount: 100.0,
-            }))
+            })
             .then_expect_error("funds not available")
     }
 }
