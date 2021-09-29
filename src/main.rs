@@ -104,6 +104,7 @@ async fn command_handler(
             let err_payload = match &err {
                 AggregateError::UserError(e) => serde_json::to_string(e).unwrap(),
                 AggregateError::TechnicalError(e) => e.clone(),
+                AggregateError::AggregateConflict => "command collision encountered, please try again".to_string(),
             };
             Ok(Response::builder()
                 .status(StatusCode::BAD_REQUEST)

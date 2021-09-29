@@ -20,8 +20,8 @@ impl CommandService {
         // Deserialize the payload into a `BankAccountCommand`.
         let payload = match serde_json::from_slice(payload) {
             Ok(payload) => payload,
-            Err(err) => {
-                return Err(AggregateError::TechnicalError(err.to_string()));
+            Err(_) => {
+                return Err(AggregateError::new("not a valid command"));
             }
         };
         let mut metadata = HashMap::new();
