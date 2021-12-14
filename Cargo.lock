@@ -130,7 +130,7 @@ dependencies = [
 
 [[package]]
 name = "cqrs-demo"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "async-trait",
  "chrono",
@@ -146,9 +146,9 @@ dependencies = [
 
 [[package]]
 name = "cqrs-es"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d44495aa91c959ee0f69d0b65b4c2fd611679cc49231fba597fa48800a364035"
+checksum = "3dc2105e46129834846557367ddf402835c2ffaa067665bce8371d6bc2b88cfe"
 dependencies = [
  "async-trait",
  "serde",
@@ -830,9 +830,9 @@ checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
 name = "persist-es"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de217e797759d3bc518d1fffb4aed91189d571582ae028ac4b07edb464f69253"
+checksum = "8c3d049d7f87d6f25c255f5d3c18bbc872e16437119e0b3a80da5ec388191394"
 dependencies = [
  "async-trait",
  "cqrs-es",
@@ -874,9 +874,9 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "postgres-es"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c013859c21fcc834810e2c8c889c7b0803933996b286a90be68d9216b5500c3"
+checksum = "03a6e3417c8b8db91364f1cf27954c852dc96a4097a8d405dd284e864208e79d"
 dependencies = [
  "async-trait",
  "cqrs-es",

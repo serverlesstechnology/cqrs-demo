@@ -1,14 +1,14 @@
 [package]
 name = "cqrs-demo"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Dave Garred <dave.garred@serverlesstechnology.com>"]
 edition = "2018"
 
 [dependencies]
 
-cqrs-es = "0.2.2"
-persist-es = "0.2.2"
-postgres-es = "0.2.2"
+cqrs-es = "0.2.3"
+persist-es = "0.2.3"
+postgres-es = "0.2.3"
 
 async-trait = "0.1.51"
 serde = { version = "1.0.130", features = ["derive"]}
