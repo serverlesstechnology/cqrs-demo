@@ -1,7 +1,7 @@
 use crate::aggregate::BankAccount;
-use cqrs_es::AggregateError;
 use postgres_es::PostgresCqrs;
 use std::collections::HashMap;
+use cqrs_es::AggregateError;
 
 pub struct CommandService {
     cqrs: PostgresCqrs<BankAccount>,

@@ -1,19 +1,19 @@
 [package]
 name = "cqrs-demo"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["Dave Garred <dave.garred@serverlesstechnology.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 
-cqrs-es = "0.2.3"
-persist-es = "0.2.3"
-postgres-es = "0.2.3"
+cqrs-es = "0.2.4"
+persist-es = "0.2.4"
+postgres-es = "0.2.4"
 
-async-trait = "0.1.51"
-serde = { version = "1.0.130", features = ["derive"]}
+async-trait = "0.1.52"
+serde = { version = "1.0", features = ["derive"]}
 serde_json = "1.0"
-sqlx = { version = "0.5.7", features = [ "postgres" , "runtime-tokio-rustls", "json"] }
+sqlx = { version = "0.5.9", features = [ "postgres" , "runtime-tokio-rustls", "json"] }
 chrono = "0.4.19"
 tokio = { version = "1", features = ["full"] }
 warp = "0.3.1"
