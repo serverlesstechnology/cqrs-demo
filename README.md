@@ -3,7 +3,7 @@
 > A demo application using the [cqrs-es](https://github.com/serverlesstechnology/cqrs) framework
 > and postgres persistence.
 
-This is a pretty major upgrade from previous versions now using v0.2.4 of the cqrs-es framework.
+This is a pretty major upgrade from previous versions using v0.1.3 or before of the cqrs-es framework.
 Changes include
 - significant changes to the database schema
 - asynchrounous Rust using the [Tokio runtime](https://github.com/tokio-rs/tokio)
@@ -12,7 +12,7 @@ Changes include
 ## Requirements
 - rust stable
 - docker & [docker-compose](https://docs.docker.com/compose/) for starting an instance of Postgres
-- [postman](https://www.postman.com/) or [curl](curl/test_api.sh) or your favorite Restful client)
+- [postman](https://www.postman.com/) or [curl](curl/test_api.sh) (or your favorite Restful client)
 
 Alternatively, if a a standard Postgres instance is running locally it can be utilized instead of the docker instance,
 see [the init script](db/init.sql) for the expected table configuration. 
