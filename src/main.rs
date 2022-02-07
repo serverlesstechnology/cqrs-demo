@@ -70,7 +70,7 @@ async fn query_handler(
     // The account query repository, injected by warp from the configured `with_query` method.
     query_repo: Arc<AccountQuery>,
 ) -> std::result::Result<impl Reply, Rejection> {
-    let response = match query_repo.load(account_id).await {
+    let response = match query_repo.load(&account_id).await {
         None => Response::builder()
             .status(StatusCode::NOT_FOUND)
             .body(Body::empty()),
@@ -103,8 +103,12 @@ async fn command_handler(
         Err(err) => {
             let err_payload = match &err {
                 AggregateError::UserError(e) => serde_json::to_string(e).unwrap(),
-                AggregateError::TechnicalError(e) => e.clone(),
-                AggregateError::AggregateConflict => "command collision encountered, please try again".to_string(),
+                AggregateError::TechnicalError(e) => e.to_string(),
+                AggregateError::AggregateConflict => {
+                    "command collision encountered, please try again".to_string()
+                }
+                AggregateError::DatabaseConnectionError(e) => e.to_string(),
+                AggregateError::DeserializationError(e) => e.to_string(),
             };
             Ok(Response::builder()
                 .status(StatusCode::BAD_REQUEST)

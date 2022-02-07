@@ -24,7 +24,11 @@ impl Query<BankAccount> for SimpleLoggingQuery {
 // Our second query, this one will be handled with Postgres `GenericQuery`
 // which will serialize and persist our view after it is updated. It also
 // provides a `load` method to deserialize the view on request.
-pub type AccountQuery = GenericQuery<PostgresViewRepository<BankAccountView, BankAccount>, BankAccountView, BankAccount>;
+pub type AccountQuery = GenericQuery<
+    PostgresViewRepository<BankAccountView, BankAccount>,
+    BankAccountView,
+    BankAccount,
+>;
 
 // The view for a BankAccount query, for a standard http query this should
 // be designed to reflect the dto that will be returned to a user.

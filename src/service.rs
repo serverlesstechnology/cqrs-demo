@@ -1,7 +1,7 @@
 use crate::aggregate::BankAccount;
+use cqrs_es::{AggregateError, UserErrorPayload};
 use postgres_es::PostgresCqrs;
 use std::collections::HashMap;
-use cqrs_es::AggregateError;
 
 pub struct CommandService {
     cqrs: PostgresCqrs<BankAccount>,
@@ -16,12 +16,12 @@ impl CommandService {
         &self,
         aggregate_id: &str,
         payload: &[u8],
-    ) -> Result<(), AggregateError> {
+    ) -> Result<(), AggregateError<UserErrorPayload>> {
         // Deserialize the payload into a `BankAccountCommand`.
         let payload = match serde_json::from_slice(payload) {
             Ok(payload) => payload,
             Err(_) => {
-                return Err(AggregateError::new("not a valid command"));
+                return Err("not a valid command".into());
             }
         };
         let mut metadata = HashMap::new();

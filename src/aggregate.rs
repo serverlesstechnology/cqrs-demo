@@ -1,4 +1,4 @@
-use cqrs_es::{Aggregate, AggregateError};
+use cqrs_es::{Aggregate, AggregateError, UserErrorPayload};
 use serde::{Deserialize, Serialize};
 
 use crate::commands::BankAccountCommand;
@@ -13,6 +13,7 @@ pub struct BankAccount {
 impl Aggregate for BankAccount {
     type Command = BankAccountCommand;
     type Event = BankAccountEvent;
+    type Error = UserErrorPayload;
 
     // This identifier should be unique to the system.
     fn aggregate_type() -> &'static str {
@@ -21,7 +22,10 @@ impl Aggregate for BankAccount {
 
     // The aggregate logic goes here. Note that this will be the _bulk_ of a CQRS system
     // so expect to use helper functions elsewhere to keep the code clean.
-    fn handle(&self, command: Self::Command) -> Result<Vec<Self::Event>, AggregateError> {
+    fn handle(
+        &self,
+        command: Self::Command,
+    ) -> Result<Vec<Self::Event>, AggregateError<Self::Error>> {
         match command {
             BankAccountCommand::OpenAccount { account_id } => {
                 Ok(vec![BankAccountEvent::AccountOpened { account_id }])
@@ -36,17 +40,20 @@ impl Aggregate for BankAccount {
             BankAccountCommand::WithdrawMoney { amount } => {
                 let balance = self.balance - amount;
                 if balance < 0_f64 {
-                    return Err(AggregateError::new("funds not available"));
+                    return Err("funds not available".into());
                 }
                 Ok(vec![BankAccountEvent::CustomerWithdrewCash {
                     amount,
                     balance,
                 }])
             }
-            BankAccountCommand::WriteCheck { check_number, amount } => {
+            BankAccountCommand::WriteCheck {
+                check_number,
+                amount,
+            } => {
                 let balance = self.balance - amount;
                 if balance < 0_f64 {
-                    return Err(AggregateError::new("funds not available"));
+                    return Err("funds not available".into());
                 }
                 Ok(vec![BankAccountEvent::CustomerWroteCheck {
                     check_number,
@@ -114,9 +121,7 @@ mod aggregate_tests {
             // In a test case with no previous events
             .given_no_previous_events()
             // Wnen we fire this command
-            .when(BankAccountCommand::DepositMoney {
-                amount: 200.0,
-            })
+            .when(BankAccountCommand::DepositMoney { amount: 200.0 })
             // then we expect these results
             .then_expect_events(vec![expected]);
     }
@@ -135,9 +140,7 @@ mod aggregate_tests {
             // Given this previously applied event
             .given(vec![previous])
             // When we fire this command
-            .when(BankAccountCommand::DepositMoney {
-                amount: 200.0,
-            })
+            .when(BankAccountCommand::DepositMoney { amount: 200.0 })
             // Then we expect this resultant event
             .then_expect_events(vec![expected]);
     }
@@ -154,9 +157,7 @@ mod aggregate_tests {
         };
         AccountTestFramework::default()
             .given(vec![previous])
-            .when(BankAccountCommand::WithdrawMoney {
-                amount: 100.0,
-            })
+            .when(BankAccountCommand::WithdrawMoney { amount: 100.0 })
             .then_expect_events(vec![expected]);
     }
 
@@ -164,9 +165,7 @@ mod aggregate_tests {
     fn test_withdraw_money_funds_not_available() {
         AccountTestFramework::default()
             .given_no_previous_events()
-            .when(BankAccountCommand::WithdrawMoney {
-                amount: 200.0,
-            })
+            .when(BankAccountCommand::WithdrawMoney { amount: 200.0 })
             // Here we expect an error rather than any events
             .then_expect_error("funds not available")
     }
