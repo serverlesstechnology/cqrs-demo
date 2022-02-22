@@ -1,4 +1,4 @@
-use crate::aggregate::BankAccount;
+use crate::domain::aggregate::BankAccount;
 use cqrs_es::{AggregateError, UserErrorPayload};
 use postgres_es::PostgresCqrs;
 use std::collections::HashMap;

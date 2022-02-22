@@ -4,7 +4,7 @@ use cqrs_es::Query;
 use postgres_es::{default_postgress_pool, PostgresCqrs, PostgresViewRepository};
 use sqlx::{Pool, Postgres};
 
-use crate::aggregate::BankAccount;
+use crate::domain::aggregate::BankAccount;
 use crate::queries::{AccountQuery, SimpleLoggingQuery};
 use crate::service::CommandService;
 

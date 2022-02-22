@@ -1,8 +1,7 @@
+use crate::domain::commands::BankAccountCommand;
+use crate::domain::events::BankAccountEvent;
 use cqrs_es::{Aggregate, AggregateError, UserErrorPayload};
 use serde::{Deserialize, Serialize};
-
-use crate::commands::BankAccountCommand;
-use crate::events::BankAccountEvent;
 
 #[derive(Serialize, Deserialize)]
 pub struct BankAccount {
@@ -104,6 +103,9 @@ mod aggregate_tests {
 
     use crate::aggregate::BankAccount;
     use crate::commands::BankAccountCommand;
+    use crate::domain::aggregate::BankAccount;
+    use crate::domain::commands::BankAccountCommand;
+    use crate::domain::events::BankAccountEvent;
     use crate::events::BankAccountEvent;
 
     // A test framework that will apply our events and command

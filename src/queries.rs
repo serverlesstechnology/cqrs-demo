@@ -4,8 +4,8 @@ use persist_es::GenericQuery;
 use postgres_es::PostgresViewRepository;
 use serde::{Deserialize, Serialize};
 
-use crate::aggregate::BankAccount;
-use crate::events::BankAccountEvent;
+use crate::domain::aggregate::BankAccount;
+use crate::domain::events::BankAccountEvent;
 
 pub struct SimpleLoggingQuery {}
 

@@ -13,10 +13,8 @@ use warp::hyper::body::Bytes;
 use warp::hyper::{Body, StatusCode};
 use warp::Filter;
 
-mod aggregate;
-mod commands;
 mod config;
-mod events;
+mod domain;
 mod queries;
 mod service;
 
