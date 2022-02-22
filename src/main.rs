@@ -1,117 +1,97 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all)]
 
-use cqrs_es::AggregateError;
-use warp::{http::Response, Rejection, Reply};
-
-use crate::config::ServiceInjector;
-use crate::queries::AccountQuery;
-use crate::service::CommandService;
+use std::collections::HashMap;
 use std::convert::Infallible;
 use std::sync::Arc;
-use warp::hyper::body::Bytes;
-use warp::hyper::{Body, StatusCode};
-use warp::Filter;
+
+use async_trait::async_trait;
+use axum::extract::{Extension, FromRequest, Path, RequestParts};
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use axum::routing::get;
+use axum::{AddExtensionLayer, Json, Router};
+use postgres_es::{default_postgress_pool, PostgresCqrs};
+
+use crate::config::cqrs_framework;
+use crate::domain::aggregate::BankAccount;
+use crate::domain::commands::BankAccountCommand;
+use crate::queries::AccountQuery;
 
 mod config;
 mod domain;
 mod queries;
-mod service;
 
 #[tokio::main]
 async fn main() {
     // Configure the CQRS framework using a Postgres database and two queries.
     // Database should automatically configure with `docker-compose up -d`,
     // see init file at `/db/init.sql` for more.
-    let services = ServiceInjector::configured().await;
+    let pool = default_postgress_pool("postgresql://demo_user:demo_pass@localhost:5432/demo").await;
+    let (cqrs, account_query) = cqrs_framework(pool);
 
-    // Configure the query endpoint at `GET /account/{{accountId}}
-    // This will load a view for the sumbitted `accountId` to add to the respoonse.
-    let query = warp::get()
-        .and(warp::path("account"))
-        .and(warp::path::param())
-        .and(with_query(services.query_service()))
-        .and_then(query_handler);
+    let router = Router::new()
+        .route(
+            "/account/:account_id",
+            get(query_handler).post(command_handler),
+        )
+        .layer(AddExtensionLayer::new(cqrs))
+        .layer(AddExtensionLayer::new(account_query));
 
-    // Configure the command endpoint at `POST /account/:accountId`
-    // Response is a 204 status if successful or a 400 with error message if the command fails.
-    // For a failure example, try withdrawing more money than is available.
-    let command = warp::post()
-        .and(warp::path("account"))
-        .and(warp::path::param())
-        .and(warp::body::bytes())
-        .and(with_command(services.command_service()))
-        .and_then(command_handler);
-
-    // Combines the command and query routes and starts a warp server.
-    let routes = warp::any().and(query).or(command);
-    warp::serve(routes).run(([127, 0, 0, 1], 3030)).await
-}
-
-fn with_query(
-    query: Arc<AccountQuery>,
-) -> impl Filter<Extract = (Arc<AccountQuery>,), Error = Infallible> + Clone {
-    warp::any().map(move || query.clone())
-}
-
-fn with_command(
-    command_service: Arc<CommandService>,
-) -> impl Filter<Extract = (Arc<CommandService>,), Error = Infallible> + Clone {
-    warp::any().map(move || command_service.clone())
+    axum::Server::bind(&"0.0.0.0:3030".parse().unwrap())
+        .serve(router.into_make_service())
+        .await
+        .unwrap();
 }
 
 // Serves as our query endpoint to respond with the materialized BankAccountView
 // for the requested account.
 async fn query_handler(
-    // The requested account id, injected by warp from the path parameter.
-    account_id: String,
-    // The account query repository, injected by warp from the configured `with_query` method.
-    query_repo: Arc<AccountQuery>,
-) -> std::result::Result<impl Reply, Rejection> {
-    let response = match query_repo.load(&account_id).await {
-        None => Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body(Body::empty()),
-        Some(query) => {
-            let body = serde_json::to_string(&query).unwrap();
-            Response::builder()
-                .header(warp::http::header::CONTENT_TYPE, "application/json")
-                .body(Body::from(body))
-        }
-    };
-    Ok(response)
+    Path(account_id): Path<String>,
+    Extension(query_repo): Extension<Arc<AccountQuery>>,
+) -> Response {
+    match query_repo.load(&account_id).await {
+        None => StatusCode::NOT_FOUND.into_response(),
+        Some(view) => (StatusCode::OK, Json(view)).into_response(),
+    }
 }
 
 // Serves as our command endpoint to make changes in our `BankAccount` aggregate
 // for the requested account.
 async fn command_handler(
-    // The requested account id, injected by warp from the path parameter.
-    account_id: String,
-    // The body of the request, injected by warp.
-    payload: Bytes,
-    // A command service for handling commands, injected by warp from the configured `with_command` method.
-    command_service: Arc<CommandService>,
-) -> std::result::Result<impl Reply, Rejection> {
-    let payload = std::str::from_utf8(payload.as_ref()).unwrap().to_string();
-    let result = command_service.process_command(account_id.as_str(), payload.as_bytes());
-    match result.await {
-        Ok(_) => Ok(Response::builder()
-            .status(StatusCode::NO_CONTENT)
-            .body(Body::empty())),
-        Err(err) => {
-            let err_payload = match &err {
-                AggregateError::UserError(e) => serde_json::to_string(e).unwrap(),
-                AggregateError::TechnicalError(e) => e.to_string(),
-                AggregateError::AggregateConflict => {
-                    "command collision encountered, please try again".to_string()
-                }
-                AggregateError::DatabaseConnectionError(e) => e.to_string(),
-                AggregateError::DeserializationError(e) => e.to_string(),
-            };
-            Ok(Response::builder()
-                .status(StatusCode::BAD_REQUEST)
-                .header(warp::http::header::CONTENT_TYPE, "application/json")
-                .body(Body::from(err_payload)))
+    Path(account_id): Path<String>,
+    Json(command): Json<BankAccountCommand>,
+    Extension(cqrs): Extension<Arc<PostgresCqrs<BankAccount>>>,
+    MetadataExtension(metadata): MetadataExtension,
+) -> Response {
+    match cqrs
+        .execute_with_metadata(&account_id, command, metadata)
+        .await
+    {
+        Ok(_) => StatusCode::NO_CONTENT.into_response(),
+        Err(err) => (StatusCode::BAD_REQUEST, err.to_string()).into_response(),
+    }
+}
+
+struct MetadataExtension(HashMap<String, String>);
+
+#[async_trait]
+impl<B: Send> FromRequest<B> for MetadataExtension {
+    type Rejection = Infallible;
+
+    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+        let mut metadata = HashMap::default();
+        metadata.insert("time".to_string(), chrono::Utc::now().to_rfc3339());
+        metadata.insert("uri".to_string(), req.uri().to_string());
+        let headers = match req.headers() {
+            None => return Ok(MetadataExtension(metadata)),
+            Some(headers) => headers,
+        };
+        if let Some(user_agent) = headers.get("User-Agent") {
+            if let Ok(value) = user_agent.to_str() {
+                metadata.insert("User-Agent".to_string(), value.to_string());
+            }
         }
+        Ok(MetadataExtension(metadata))
     }
 }

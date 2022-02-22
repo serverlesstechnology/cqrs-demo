@@ -11,9 +11,11 @@ persist-es = "0.2.5"
 postgres-es = "0.2.5"
 
 async-trait = "0.1.52"
+axum = "0.4.4"
 serde = { version = "1.0", features = ["derive"]}
 serde_json = "1.0"
 sqlx = { version = "0.5.10", features = [ "postgres" , "runtime-tokio-rustls", "json"] }
 chrono = "0.4.19"
 tokio = { version = "1", features = ["full"] }
-warp = "0.3.1"
+tower = "0.4.8"
+tower-http = "0.2.3"

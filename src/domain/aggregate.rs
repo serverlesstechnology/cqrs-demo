@@ -101,12 +101,9 @@ impl Default for BankAccount {
 mod aggregate_tests {
     use cqrs_es::test::TestFramework;
 
-    use crate::aggregate::BankAccount;
-    use crate::commands::BankAccountCommand;
     use crate::domain::aggregate::BankAccount;
     use crate::domain::commands::BankAccountCommand;
     use crate::domain::events::BankAccountEvent;
-    use crate::events::BankAccountEvent;
 
     // A test framework that will apply our events and command
     // and verify that the logic works as expected.
