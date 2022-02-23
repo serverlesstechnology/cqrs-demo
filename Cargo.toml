@@ -6,9 +6,12 @@ edition = "2021"
 
 [dependencies]
 
-cqrs-es = "0.2.5"
-persist-es = "0.2.5"
-postgres-es = "0.2.5"
+#cqrs-es = "0.2.5"
+cqrs-es = {path = "../cqrs"}
+#persist-es = "0.2.5"
+persist-es = {path = "../persist-es"}
+#postgres-es = "0.2.5"
+postgres-es = {path = "../postgres-es"}
 
 async-trait = "0.1.52"
 axum = "0.4.4"

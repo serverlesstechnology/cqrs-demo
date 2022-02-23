@@ -17,10 +17,12 @@ use crate::config::cqrs_framework;
 use crate::domain::aggregate::BankAccount;
 use crate::domain::commands::BankAccountCommand;
 use crate::queries::AccountQuery;
+use crate::services::HappyPathServicesFactory;
 
 mod config;
 mod domain;
 mod queries;
+mod services;
 
 #[tokio::main]
 async fn main() {
@@ -28,6 +30,7 @@ async fn main() {
     // Database should automatically configure with `docker-compose up -d`,
     // see init file at `/db/init.sql` for more.
     let pool = default_postgress_pool("postgresql://demo_user:demo_pass@localhost:5432/demo").await;
+    let services_factory = Arc::new(HappyPathServicesFactory);
     let (cqrs, account_query) = cqrs_framework(pool);
 
     let router = Router::new()
@@ -36,6 +39,7 @@ async fn main() {
             get(query_handler).post(command_handler),
         )
         .layer(AddExtensionLayer::new(cqrs))
+        .layer(AddExtensionLayer::new(services_factory))
         .layer(AddExtensionLayer::new(account_query));
 
     axum::Server::bind(&"0.0.0.0:3030".parse().unwrap())
@@ -61,9 +65,11 @@ async fn query_handler(
 async fn command_handler(
     Path(account_id): Path<String>,
     Json(command): Json<BankAccountCommand>,
+    Extension(services_factory): Extension<Arc<HappyPathServicesFactory>>,
     Extension(cqrs): Extension<Arc<PostgresCqrs<BankAccount>>>,
     MetadataExtension(metadata): MetadataExtension,
 ) -> Response {
+    let command = services_factory.wrap_bank_account_command(command);
     match cqrs
         .execute_with_metadata(&account_id, command, metadata)
         .await
