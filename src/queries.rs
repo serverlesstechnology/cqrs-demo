@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use cqrs_es::{EventEnvelope, Query, View};
-use persist_es::GenericQuery;
+use cqrs_es::persist::GenericQuery;
 use postgres_es::PostgresViewRepository;
 use serde::{Deserialize, Serialize};
 

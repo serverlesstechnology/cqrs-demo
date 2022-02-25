@@ -164,7 +164,6 @@ dependencies = [
  "axum",
  "chrono",
  "cqrs-es",
- "persist-es",
  "postgres-es",
  "serde",
  "serde_json",
@@ -176,7 +175,7 @@ dependencies = [
 
 [[package]]
 name = "cqrs-es"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "async-trait",
  "serde",
@@ -778,16 +777,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
-name = "persist-es"
-version = "0.2.5"
-dependencies = [
- "async-trait",
- "cqrs-es",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "pin-project"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -821,12 +810,11 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "postgres-es"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "async-trait",
  "cqrs-es",
  "futures",
- "persist-es",
  "serde",
  "serde_json",
  "sqlx",

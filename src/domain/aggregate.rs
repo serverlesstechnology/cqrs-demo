@@ -217,7 +217,7 @@ mod aggregate_tests {
         AccountTestFramework::default()
             .given(vec![previous])
             .when(command)
-            .then_expect_error("atm rule violation");
+            .then_expect_error_message("atm rule violation");
     }
 
     #[test]
@@ -234,7 +234,7 @@ mod aggregate_tests {
             .given_no_previous_events()
             .when(command)
             // Here we expect an error rather than any events
-            .then_expect_error("funds not available")
+            .then_expect_error_message("funds not available")
     }
 
     #[test]
@@ -283,7 +283,7 @@ mod aggregate_tests {
         AccountTestFramework::default()
             .given(vec![previous])
             .when(command)
-            .then_expect_error("check invalid");
+            .then_expect_error_message("check invalid");
     }
 
     #[test]
@@ -299,7 +299,7 @@ mod aggregate_tests {
         AccountTestFramework::default()
             .given_no_previous_events()
             .when(command)
-            .then_expect_error("funds not available")
+            .then_expect_error_message("funds not available")
     }
 
     pub struct MockBankAccountServices {
