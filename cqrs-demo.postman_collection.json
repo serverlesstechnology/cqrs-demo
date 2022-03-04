@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "71486332-7d3b-46ce-85cb-f4c90864f3f2",
+		"_postman_id": "8ee552bb-c88e-4e10-8e9a-a553373e2b6f",
 		"name": "cqrs-demo",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -79,7 +79,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"WithdrawMoney\": {\n        \"amount\": 400.0\n    }\n}",
+					"raw": "{\n    \"WithdrawMoney\": {\n        \"atm_id\": \"ATM-N468290\",\n        \"amount\": 400.0\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
