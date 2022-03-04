@@ -18,8 +18,8 @@ impl Aggregate for BankAccount {
     type Error = UserErrorPayload;
 
     // This identifier should be unique to the system.
-    fn aggregate_type() -> &'static str {
-        "account"
+    fn aggregate_type() -> String {
+        "account".to_string()
     }
 
     // The aggregate logic goes here. Note that this will be the _bulk_ of a CQRS system

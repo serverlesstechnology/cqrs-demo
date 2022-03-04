@@ -22,16 +22,16 @@ pub enum BankAccountEvent {
 }
 
 impl DomainEvent for BankAccountEvent {
-    fn event_type(&self) -> &'static str {
+    fn event_type(&self) -> String {
         match self {
-            BankAccountEvent::AccountOpened { .. } => "AccountOpened",
-            BankAccountEvent::CustomerDepositedMoney { .. } => "CustomerDepositedMoney",
-            BankAccountEvent::CustomerWithdrewCash { .. } => "CustomerWithdrewCash",
-            BankAccountEvent::CustomerWroteCheck { .. } => "CustomerWroteCheck",
+            BankAccountEvent::AccountOpened { .. } => "AccountOpened".to_string(),
+            BankAccountEvent::CustomerDepositedMoney { .. } => "CustomerDepositedMoney".to_string(),
+            BankAccountEvent::CustomerWithdrewCash { .. } => "CustomerWithdrewCash".to_string(),
+            BankAccountEvent::CustomerWroteCheck { .. } => "CustomerWroteCheck".to_string(),
         }
     }
 
-    fn event_version(&self) -> &'static str {
-        "1.0"
+    fn event_version(&self) -> String {
+        "1.0".to_string()
     }
 }

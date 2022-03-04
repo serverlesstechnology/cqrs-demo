@@ -4,8 +4,8 @@ use crate::domain::commands::{
 use crate::BankAccountCommand;
 use async_trait::async_trait;
 
-pub struct HappyPathBankAccountServices;
-
+// A helper class that is used to wrap commands with a command wrapper that provides
+// access to all the services that will be needed for command processing.
 pub struct HappyPathServicesFactory;
 
 impl HappyPathServicesFactory {
@@ -19,6 +19,9 @@ impl HappyPathServicesFactory {
         }
     }
 }
+
+// A very simple "happy path" set of services that always succeed.
+pub struct HappyPathBankAccountServices;
 
 #[async_trait]
 impl BankAccountServices for HappyPathBankAccountServices {

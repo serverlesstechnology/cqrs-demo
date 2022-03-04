@@ -30,37 +30,58 @@ pub type AccountQuery = GenericQuery<
     BankAccount,
 >;
 
-// The view for a BankAccount query, for a standard http query this should
-// be designed to reflect the dto that will be returned to a user.
+// The view for a BankAccount query, for a standard http application this should
+// be designed to reflect the response dto that will be returned to a user.
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct BankAccountView {
     account_id: Option<String>,
     balance: f64,
     written_checks: Vec<String>,
+    ledger: Vec<LedgerEntry>
 }
 
-// This is implemented to update the view with events as they are committed.
-// The logic should be minimal here, e.g., don't calculate the account balance
-// here, instead design the events to carry that information.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LedgerEntry {
+    description: String,
+    amount: f64,
+}
+impl LedgerEntry {
+    fn new(description: &str, amount: f64) -> Self {
+        Self {
+            description: description.to_string(),
+            amount
+        }
+    }
+}
+
+// This updates the view with events as they are committed.
+// The logic should be minimal here, e.g., don't calculate the account balance,
+// design the events to carry the balance information instead.
 impl View<BankAccount> for BankAccountView {
     fn update(&mut self, event: &EventEnvelope<BankAccount>) {
         match &event.payload {
             BankAccountEvent::AccountOpened { account_id } => {
                 self.account_id = Some(account_id.clone());
             }
-            BankAccountEvent::CustomerDepositedMoney { amount: _, balance } => {
+
+            BankAccountEvent::CustomerDepositedMoney { amount, balance } => {
+                self.ledger.push(LedgerEntry::new("deposit", *amount));
                 self.balance = *balance;
             }
-            BankAccountEvent::CustomerWithdrewCash { amount: _, balance } => {
+
+            BankAccountEvent::CustomerWithdrewCash { amount, balance } => {
+                self.ledger.push(LedgerEntry::new("atm withdrawal", *amount));
                 self.balance = *balance;
             }
+
             BankAccountEvent::CustomerWroteCheck {
                 check_number,
-                amount: _,
+                amount,
                 balance,
             } => {
+                self.ledger.push(LedgerEntry::new(&check_number, *amount));
+                self.written_checks.push(check_number.clone());
                 self.balance = *balance;
-                self.written_checks.push(check_number.clone())
             }
         }
     }
