@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use cqrs_es::{EventEnvelope, Query, View};
 use cqrs_es::persist::GenericQuery;
+use cqrs_es::{EventEnvelope, Query, View};
 use postgres_es::PostgresViewRepository;
 use serde::{Deserialize, Serialize};
 
@@ -37,7 +37,7 @@ pub struct BankAccountView {
     account_id: Option<String>,
     balance: f64,
     written_checks: Vec<String>,
-    ledger: Vec<LedgerEntry>
+    ledger: Vec<LedgerEntry>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -49,7 +49,7 @@ impl LedgerEntry {
     fn new(description: &str, amount: f64) -> Self {
         Self {
             description: description.to_string(),
-            amount
+            amount,
         }
     }
 }
@@ -70,7 +70,8 @@ impl View<BankAccount> for BankAccountView {
             }
 
             BankAccountEvent::CustomerWithdrewCash { amount, balance } => {
-                self.ledger.push(LedgerEntry::new("atm withdrawal", *amount));
+                self.ledger
+                    .push(LedgerEntry::new("atm withdrawal", *amount));
                 self.balance = *balance;
             }
 
@@ -79,7 +80,7 @@ impl View<BankAccount> for BankAccountView {
                 amount,
                 balance,
             } => {
-                self.ledger.push(LedgerEntry::new(&check_number, *amount));
+                self.ledger.push(LedgerEntry::new(check_number, *amount));
                 self.written_checks.push(check_number.clone());
                 self.balance = *balance;
             }

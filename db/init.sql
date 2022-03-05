@@ -13,10 +13,10 @@ CREATE TABLE events
 
 CREATE TABLE account_query
 (
-    query_instance_id text                        NOT NULL,
+    view_id text                        NOT NULL,
     version           bigint CHECK (version >= 0) NOT NULL,
     payload           json                        NOT NULL,
-    PRIMARY KEY (query_instance_id)
+    PRIMARY KEY (view_id)
 );
 
 CREATE USER demo_user WITH ENCRYPTED PASSWORD 'demo_pass';

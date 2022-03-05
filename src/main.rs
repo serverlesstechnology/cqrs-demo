@@ -3,11 +3,11 @@
 
 use std::sync::Arc;
 
-use axum::{AddExtensionLayer, Json, Router};
 use axum::extract::{Extension, Path};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
+use axum::{AddExtensionLayer, Json, Router};
 use postgres_es::{default_postgress_pool, PostgresCqrs};
 
 use crate::config::cqrs_framework;
@@ -19,9 +19,9 @@ use crate::services::HappyPathServicesFactory;
 
 mod config;
 mod domain;
+mod metadata_extension;
 mod queries;
 mod services;
-mod metadata_extension;
 
 #[tokio::main]
 async fn main() {

@@ -5,11 +5,7 @@ TEST_ACCT="test-acct-$RANDOM"
 TEST_URL="localhost:3030/account/$TEST_ACCT"
 echo "Using test account: $TEST_ACCT"
 echo "Opening an account"
-$curl -i --location --request POST $TEST_URL --header 'Content-Type: application/json' --data-raw "{
-    \"OpenAccount\": {
-        \"account_id\": \"$TEST_ACCT\"
-    }
-}"
+curl -i --location --request POST $TEST_URL --header 'Content-Type: application/json' --data-raw "{\"OpenAccount\": {\"account_id\": \"$TEST_ACCT\"}}"
 echo "Depositing money"
 curl -i --location --request POST $TEST_URL --header 'Content-Type: application/json' --data "@DepositMoney.json"
 echo "Withdrawing money"

@@ -44,7 +44,12 @@ impl Aggregate for BankAccount {
                 if balance < 0_f64 {
                     return Err("funds not available".into());
                 }
-                if let Err(_) = command.services.atm_withdrawal(&atm_id, amount).await {
+                if command
+                    .services
+                    .atm_withdrawal(&atm_id, amount)
+                    .await
+                    .is_err()
+                {
                     return Err("atm rule violation".into());
                 };
                 Ok(vec![BankAccountEvent::CustomerWithdrewCash {
@@ -60,10 +65,11 @@ impl Aggregate for BankAccount {
                 if balance < 0_f64 {
                     return Err("funds not available".into());
                 }
-                if let Err(_) = command
+                if command
                     .services
                     .validate_check(&self.account_id, &check_number)
                     .await
+                    .is_err()
                 {
                     return Err("check invalid".into());
                 };
