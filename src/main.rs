@@ -8,13 +8,14 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{AddExtensionLayer, Json, Router};
-use postgres_es::{default_postgress_pool, PostgresCqrs};
+use cqrs_es::persist::ViewRepository;
+use postgres_es::{default_postgress_pool, PostgresCqrs, PostgresViewRepository};
 
 use crate::config::cqrs_framework;
 use crate::domain::aggregate::BankAccount;
 use crate::domain::commands::BankAccountCommand;
 use crate::metadata_extension::MetadataExtension;
-use crate::queries::AccountQuery;
+use crate::queries::BankAccountView;
 use crate::services::HappyPathServicesFactory;
 
 mod config;
@@ -60,9 +61,15 @@ async fn main() {
 // for the requested account.
 async fn query_handler(
     Path(account_id): Path<String>,
-    Extension(account_query): Extension<Arc<AccountQuery>>,
+    Extension(view_repo): Extension<Arc<PostgresViewRepository<BankAccountView, BankAccount>>>,
 ) -> Response {
-    match account_query.load(&account_id).await {
+    let view = match view_repo.load(&account_id).await {
+        Ok(view) => view,
+        Err(err) => {
+            return (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response();
+        }
+    };
+    match view {
         None => StatusCode::NOT_FOUND.into_response(),
         Some(account_view) => (StatusCode::OK, Json(account_view)).into_response(),
     }
