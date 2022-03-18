@@ -9,6 +9,7 @@ description = "A demo application for cqrs-es crate."
 documentation = "https://docs.rs/cqrs-demo"
 repository = "https://github.com/serverlesstechnology/cqrs-demo"
 readme = "README.md"
+publish = false
 
 [dependencies]
 cqrs-es = "0.3.0"
