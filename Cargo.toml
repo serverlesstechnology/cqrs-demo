@@ -24,6 +24,3 @@ tokio = { version = "1", features = ["full"] }
 tower = "0.4.8"
 tower-http = "0.2.3"
 
-[patch.crates-io]
-cqrs-es = {path = "../cqrs"}
-postgres-es = {path = "../postgres-es"}

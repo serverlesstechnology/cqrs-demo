@@ -176,6 +176,8 @@ dependencies = [
 [[package]]
 name = "cqrs-es"
 version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6981d0fc083c1c0fdeb6f82d153ac0a80d1a9d77de6de6dbe787da632fb19a90"
 dependencies = [
  "async-trait",
  "serde",
@@ -807,6 +809,8 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 [[package]]
 name = "postgres-es"
 version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ea38291f195eebf6ae3c1ab7cc6f17d7fcc81757195f0e70fed58167b51b475"
 dependencies = [
  "async-trait",
  "cqrs-es",
