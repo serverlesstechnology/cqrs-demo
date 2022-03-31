@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use cqrs_es::{Aggregate, AggregateError, UserErrorPayload};
 use serde::{Deserialize, Serialize};
 
-use crate::domain::commands::{BankAccountCommand, BankAccountCommandWrapper};
+use crate::domain::commands::{BankAccountCommand, BankAccountCommandPayload};
 use crate::domain::events::BankAccountEvent;
 
 #[derive(Serialize, Deserialize)]
@@ -13,7 +13,7 @@ pub struct BankAccount {
 
 #[async_trait]
 impl Aggregate for BankAccount {
-    type Command = BankAccountCommandWrapper;
+    type Command = BankAccountCommand;
     type Event = BankAccountEvent;
     type Error = UserErrorPayload;
 
@@ -29,17 +29,17 @@ impl Aggregate for BankAccount {
         command: Self::Command,
     ) -> Result<Vec<Self::Event>, AggregateError<Self::Error>> {
         match command.payload {
-            BankAccountCommand::OpenAccount { account_id } => {
+            BankAccountCommandPayload::OpenAccount { account_id } => {
                 Ok(vec![BankAccountEvent::AccountOpened { account_id }])
             }
-            BankAccountCommand::DepositMoney { amount } => {
+            BankAccountCommandPayload::DepositMoney { amount } => {
                 let balance = self.balance + amount;
                 Ok(vec![BankAccountEvent::CustomerDepositedMoney {
                     amount,
                     balance,
                 }])
             }
-            BankAccountCommand::WithdrawMoney { amount, atm_id } => {
+            BankAccountCommandPayload::WithdrawMoney { amount, atm_id } => {
                 let balance = self.balance - amount;
                 if balance < 0_f64 {
                     return Err("funds not available".into());
@@ -57,7 +57,7 @@ impl Aggregate for BankAccount {
                     balance,
                 }])
             }
-            BankAccountCommand::WriteCheck {
+            BankAccountCommandPayload::WriteCheck {
                 check_number,
                 amount,
             } => {
@@ -125,8 +125,7 @@ mod aggregate_tests {
 
     use crate::domain::aggregate::BankAccount;
     use crate::domain::commands::{
-        AtmClientError, BankAccountCommand, BankAccountCommandWrapper, BankAccountServices,
-        CheckingClientError,
+        AtmError, BankAccountCommand, BankAccountCommandPayload, BankAccountServices, CheckingError,
     };
     use crate::domain::events::BankAccountEvent;
 
@@ -140,8 +139,8 @@ mod aggregate_tests {
             amount: 200.0,
             balance: 200.0,
         };
-        let command = BankAccountCommandWrapper {
-            payload: BankAccountCommand::DepositMoney { amount: 200.0 },
+        let command = BankAccountCommand {
+            payload: BankAccountCommandPayload::DepositMoney { amount: 200.0 },
             services: Box::new(MockBankAccountServices::default()),
         };
         // Obtain a new test framework
@@ -164,8 +163,8 @@ mod aggregate_tests {
             amount: 200.0,
             balance: 400.0,
         };
-        let command = BankAccountCommandWrapper {
-            payload: BankAccountCommand::DepositMoney { amount: 200.0 },
+        let command = BankAccountCommand {
+            payload: BankAccountCommandPayload::DepositMoney { amount: 200.0 },
             services: Box::new(MockBankAccountServices::default()),
         };
 
@@ -190,8 +189,8 @@ mod aggregate_tests {
         };
         let services = MockBankAccountServices::default();
         services.set_atm_withdrawal_response(Ok(()));
-        let command = BankAccountCommandWrapper {
-            payload: BankAccountCommand::WithdrawMoney {
+        let command = BankAccountCommand {
+            payload: BankAccountCommandPayload::WithdrawMoney {
                 amount: 100.0,
                 atm_id: "ATM34f1ba3c".to_string(),
             },
@@ -211,9 +210,9 @@ mod aggregate_tests {
             balance: 200.0,
         };
         let services = MockBankAccountServices::default();
-        services.set_atm_withdrawal_response(Err(AtmClientError));
-        let command = BankAccountCommandWrapper {
-            payload: BankAccountCommand::WithdrawMoney {
+        services.set_atm_withdrawal_response(Err(AtmError));
+        let command = BankAccountCommand {
+            payload: BankAccountCommandPayload::WithdrawMoney {
                 amount: 100.0,
                 atm_id: "ATM34f1ba3c".to_string(),
             },
@@ -228,8 +227,8 @@ mod aggregate_tests {
 
     #[test]
     fn test_withdraw_money_funds_not_available() {
-        let command = BankAccountCommandWrapper {
-            payload: BankAccountCommand::WithdrawMoney {
+        let command = BankAccountCommand {
+            payload: BankAccountCommandPayload::WithdrawMoney {
                 amount: 200.0,
                 atm_id: "ATM34f1ba3c".to_string(),
             },
@@ -256,8 +255,8 @@ mod aggregate_tests {
         };
         let services = MockBankAccountServices::default();
         services.set_validate_check_response(Ok(()));
-        let command = BankAccountCommandWrapper {
-            payload: BankAccountCommand::WriteCheck {
+        let command = BankAccountCommand {
+            payload: BankAccountCommandPayload::WriteCheck {
                 check_number: "1170".to_string(),
                 amount: 100.0,
             },
@@ -277,9 +276,9 @@ mod aggregate_tests {
             balance: 200.0,
         };
         let services = MockBankAccountServices::default();
-        services.set_validate_check_response(Err(CheckingClientError));
-        let command = BankAccountCommandWrapper {
-            payload: BankAccountCommand::WriteCheck {
+        services.set_validate_check_response(Err(CheckingError));
+        let command = BankAccountCommand {
+            payload: BankAccountCommandPayload::WriteCheck {
                 check_number: "1170".to_string(),
                 amount: 100.0,
             },
@@ -294,8 +293,8 @@ mod aggregate_tests {
 
     #[test]
     fn test_wrote_check_funds_not_available() {
-        let command = BankAccountCommandWrapper {
-            payload: BankAccountCommand::WriteCheck {
+        let command = BankAccountCommand {
+            payload: BankAccountCommandPayload::WriteCheck {
                 check_number: "1170".to_string(),
                 amount: 100.0,
             },
@@ -309,8 +308,8 @@ mod aggregate_tests {
     }
 
     pub struct MockBankAccountServices {
-        atm_withdrawal_response: Mutex<Option<Result<(), AtmClientError>>>,
-        validate_check_response: Mutex<Option<Result<(), CheckingClientError>>>,
+        atm_withdrawal_response: Mutex<Option<Result<(), AtmError>>>,
+        validate_check_response: Mutex<Option<Result<(), CheckingError>>>,
     }
 
     impl Default for MockBankAccountServices {
@@ -323,17 +322,17 @@ mod aggregate_tests {
     }
 
     impl MockBankAccountServices {
-        fn set_atm_withdrawal_response(&self, response: Result<(), AtmClientError>) {
+        fn set_atm_withdrawal_response(&self, response: Result<(), AtmError>) {
             *self.atm_withdrawal_response.lock().unwrap() = Some(response);
         }
-        fn set_validate_check_response(&self, response: Result<(), CheckingClientError>) {
+        fn set_validate_check_response(&self, response: Result<(), CheckingError>) {
             *self.validate_check_response.lock().unwrap() = Some(response);
         }
     }
 
     #[async_trait]
     impl BankAccountServices for MockBankAccountServices {
-        async fn atm_withdrawal(&self, _atm_id: &str, _amount: f64) -> Result<(), AtmClientError> {
+        async fn atm_withdrawal(&self, _atm_id: &str, _amount: f64) -> Result<(), AtmError> {
             self.atm_withdrawal_response.lock().unwrap().take().unwrap()
         }
 
@@ -341,7 +340,7 @@ mod aggregate_tests {
             &self,
             _account_id: &str,
             _check_number: &str,
-        ) -> Result<(), CheckingClientError> {
+        ) -> Result<(), CheckingError> {
             self.validate_check_response.lock().unwrap().take().unwrap()
         }
     }

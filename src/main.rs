@@ -13,7 +13,7 @@ use postgres_es::{default_postgress_pool, PostgresCqrs, PostgresViewRepository};
 
 use crate::config::cqrs_framework;
 use crate::domain::aggregate::BankAccount;
-use crate::domain::commands::BankAccountCommand;
+use crate::domain::commands::BankAccountCommandPayload;
 use crate::metadata_extension::MetadataExtension;
 use crate::queries::BankAccountView;
 use crate::services::HappyPathServicesFactory;
@@ -78,7 +78,7 @@ async fn query_handler(
 // Serves as our command endpoint to make changes in a `BankAccount` aggregate.
 async fn command_handler(
     Path(account_id): Path<String>,
-    Json(command): Json<BankAccountCommand>,
+    Json(command): Json<BankAccountCommandPayload>,
     Extension(services_factory): Extension<Arc<HappyPathServicesFactory>>,
     Extension(cqrs): Extension<Arc<PostgresCqrs<BankAccount>>>,
     MetadataExtension(metadata): MetadataExtension,
