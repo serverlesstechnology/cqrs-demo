@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Display, Formatter};
 use cqrs_es::DomainEvent;
 use serde::{Deserialize, Serialize};
 
@@ -35,3 +36,20 @@ impl DomainEvent for BankAccountEvent {
         "1.0".to_string()
     }
 }
+
+#[derive(Debug)]
+pub struct BankAccountError(String);
+
+impl From<&str> for BankAccountError {
+    fn from(msg: &str) -> Self {
+        Self(msg.to_string())
+    }
+}
+
+impl Display for BankAccountError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::error::Error for BankAccountError {}

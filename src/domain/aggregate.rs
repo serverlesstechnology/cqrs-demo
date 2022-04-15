@@ -1,9 +1,9 @@
 use async_trait::async_trait;
-use cqrs_es::{Aggregate, AggregateError, UserErrorPayload};
+use cqrs_es::{Aggregate, AggregateError};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::commands::{BankAccountCommand, BankAccountCommandPayload};
-use crate::domain::events::BankAccountEvent;
+use crate::domain::events::{BankAccountError, BankAccountEvent};
 
 #[derive(Serialize, Deserialize)]
 pub struct BankAccount {
@@ -15,7 +15,7 @@ pub struct BankAccount {
 impl Aggregate for BankAccount {
     type Command = BankAccountCommand;
     type Event = BankAccountEvent;
-    type Error = UserErrorPayload;
+    type Error = BankAccountError;
 
     // This identifier should be unique to the system.
     fn aggregate_type() -> String {
@@ -42,7 +42,7 @@ impl Aggregate for BankAccount {
             BankAccountCommandPayload::WithdrawMoney { amount, atm_id } => {
                 let balance = self.balance - amount;
                 if balance < 0_f64 {
-                    return Err("funds not available".into());
+                    return Err(AggregateError::UserError("funds not available".into()));
                 }
                 if command
                     .services
@@ -50,7 +50,7 @@ impl Aggregate for BankAccount {
                     .await
                     .is_err()
                 {
-                    return Err("atm rule violation".into());
+                    return Err(AggregateError::UserError("atm rule violation".into()));
                 };
                 Ok(vec![BankAccountEvent::CustomerWithdrewCash {
                     amount,
@@ -63,7 +63,7 @@ impl Aggregate for BankAccount {
             } => {
                 let balance = self.balance - amount;
                 if balance < 0_f64 {
-                    return Err("funds not available".into());
+                    return Err(AggregateError::UserError("funds not available".into()));
                 }
                 if command
                     .services
@@ -71,7 +71,7 @@ impl Aggregate for BankAccount {
                     .await
                     .is_err()
                 {
-                    return Err("check invalid".into());
+                    return Err(AggregateError::UserError("check invalid".into()));
                 };
                 Ok(vec![BankAccountEvent::CustomerWroteCheck {
                     check_number,

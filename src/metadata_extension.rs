@@ -18,11 +18,7 @@ impl<B: Send> FromRequest<B> for MetadataExtension {
         let mut metadata = HashMap::default();
         metadata.insert("time".to_string(), chrono::Utc::now().to_rfc3339());
         metadata.insert("uri".to_string(), req.uri().to_string());
-        let headers = match req.headers() {
-            None => return Ok(MetadataExtension(metadata)),
-            Some(headers) => headers,
-        };
-        if let Some(user_agent) = headers.get(USER_AGENT_HDR) {
+        if let Some(user_agent) = req.headers().get(USER_AGENT_HDR) {
             if let Ok(value) = user_agent.to_str() {
                 metadata.insert(USER_AGENT_HDR.to_string(), value.to_string());
             }

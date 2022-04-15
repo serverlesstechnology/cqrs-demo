@@ -7,7 +7,7 @@ use axum::extract::{Extension, Path};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
-use axum::{AddExtensionLayer, Json, Router};
+use axum::{Json, Router};
 use cqrs_es::persist::ViewRepository;
 use postgres_es::{default_postgress_pool, PostgresCqrs, PostgresViewRepository};
 
@@ -46,9 +46,9 @@ async fn main() {
             "/account/:account_id",
             get(query_handler).post(command_handler),
         )
-        .layer(AddExtensionLayer::new(cqrs))
-        .layer(AddExtensionLayer::new(services_factory))
-        .layer(AddExtensionLayer::new(account_query));
+        .layer(Extension(cqrs))
+        .layer(Extension(services_factory))
+        .layer(Extension(account_query));
 
     // Start the Axum server.
     axum::Server::bind(&"0.0.0.0:3030".parse().unwrap())
