@@ -1,28 +1,29 @@
-use crate::domain::commands::{AtmError, BankAccountCommand, BankAccountServices, CheckingError};
-use crate::BankAccountCommandPayload;
 use async_trait::async_trait;
 
-// A helper class that is used to wrap commands with a command wrapper that provides
-// access to all the services that will be needed for command processing.
-pub struct HappyPathServicesFactory;
+pub struct BankAccountServices {
+    pub services: Box<dyn BankAccountApi>,
+}
 
-impl HappyPathServicesFactory {
-    pub fn wrap_bank_account_command(
-        &self,
-        command: BankAccountCommandPayload,
-    ) -> BankAccountCommand {
-        BankAccountCommand {
-            payload: command,
-            services: Box::new(HappyPathBankAccountServices),
-        }
+impl BankAccountServices {
+    pub fn new(services: Box<dyn BankAccountApi>) -> Self {
+        Self { services }
     }
 }
+
+// External services must be called during the processing of the command.
+#[async_trait]
+pub trait BankAccountApi: Sync + Send {
+    async fn atm_withdrawal(&self, atm_id: &str, amount: f64) -> Result<(), AtmError>;
+    async fn validate_check(&self, account_id: &str, check: &str) -> Result<(), CheckingError>;
+}
+pub struct AtmError;
+pub struct CheckingError;
 
 // A very simple "happy path" set of services that always succeed.
 pub struct HappyPathBankAccountServices;
 
 #[async_trait]
-impl BankAccountServices for HappyPathBankAccountServices {
+impl BankAccountApi for HappyPathBankAccountServices {
     async fn atm_withdrawal(&self, _atm_id: &str, _amount: f64) -> Result<(), AtmError> {
         Ok(())
     }

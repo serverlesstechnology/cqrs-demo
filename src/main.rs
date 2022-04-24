@@ -13,10 +13,9 @@ use postgres_es::{default_postgress_pool, PostgresCqrs, PostgresViewRepository};
 
 use crate::config::cqrs_framework;
 use crate::domain::aggregate::BankAccount;
-use crate::domain::commands::BankAccountCommandPayload;
+use crate::domain::commands::BankAccountCommand;
 use crate::metadata_extension::MetadataExtension;
 use crate::queries::BankAccountView;
-use crate::services::HappyPathServicesFactory;
 
 mod config;
 mod domain;
@@ -35,9 +34,6 @@ async fn main() {
     let pool = default_postgress_pool("postgresql://demo_user:demo_pass@localhost:5432/demo").await;
     let (cqrs, account_query) = cqrs_framework(pool);
 
-    // Packaging all of the needed service calls into a single services factory.
-    let services_factory = Arc::new(HappyPathServicesFactory);
-
     // Configure the Axum routes and services.
     // For this example a single logical endpoint is used and the HTTP method
     // distinguishes whether the call is a command or a query.
@@ -47,7 +43,6 @@ async fn main() {
             get(query_handler).post(command_handler),
         )
         .layer(Extension(cqrs))
-        .layer(Extension(services_factory))
         .layer(Extension(account_query));
 
     // Start the Axum server.
@@ -78,12 +73,10 @@ async fn query_handler(
 // Serves as our command endpoint to make changes in a `BankAccount` aggregate.
 async fn command_handler(
     Path(account_id): Path<String>,
-    Json(command): Json<BankAccountCommandPayload>,
-    Extension(services_factory): Extension<Arc<HappyPathServicesFactory>>,
+    Json(command): Json<BankAccountCommand>,
     Extension(cqrs): Extension<Arc<PostgresCqrs<BankAccount>>>,
     MetadataExtension(metadata): MetadataExtension,
 ) -> Response {
-    let command = services_factory.wrap_bank_account_command(command);
     match cqrs
         .execute_with_metadata(&account_id, command, metadata)
         .await

@@ -6,6 +6,7 @@ use sqlx::{Pool, Postgres};
 
 use crate::domain::aggregate::BankAccount;
 use crate::queries::{AccountQuery, BankAccountView, SimpleLoggingQuery};
+use crate::services::{BankAccountServices, HappyPathBankAccountServices};
 
 pub fn cqrs_framework(
     pool: Pool<Postgres>,
@@ -28,8 +29,11 @@ pub fn cqrs_framework(
     // Create and return an event-sourced `CqrsFramework`.
     let queries: Vec<Box<dyn Query<BankAccount>>> =
         vec![Box::new(simple_query), Box::new(account_query)];
+    let services = BankAccountServices {
+        services: Box::new(HappyPathBankAccountServices),
+    };
     (
-        Arc::new(postgres_es::postgres_cqrs(pool, queries)),
+        Arc::new(postgres_es::postgres_cqrs(pool, queries, services)),
         account_view_repo,
     )
 }

@@ -1,6 +1,6 @@
-use std::fmt::{Debug, Display, Formatter};
 use cqrs_es::DomainEvent;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum BankAccountEvent {

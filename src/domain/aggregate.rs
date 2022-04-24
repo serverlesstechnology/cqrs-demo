@@ -1,9 +1,10 @@
 use async_trait::async_trait;
-use cqrs_es::{Aggregate, AggregateError};
+use cqrs_es::Aggregate;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::commands::{BankAccountCommand, BankAccountCommandPayload};
+use crate::domain::commands::BankAccountCommand;
 use crate::domain::events::{BankAccountError, BankAccountEvent};
+use crate::services::BankAccountServices;
 
 #[derive(Serialize, Deserialize)]
 pub struct BankAccount {
@@ -16,6 +17,7 @@ impl Aggregate for BankAccount {
     type Command = BankAccountCommand;
     type Event = BankAccountEvent;
     type Error = BankAccountError;
+    type Services = BankAccountServices;
 
     // This identifier should be unique to the system.
     fn aggregate_type() -> String {
@@ -27,51 +29,52 @@ impl Aggregate for BankAccount {
     async fn handle(
         &self,
         command: Self::Command,
-    ) -> Result<Vec<Self::Event>, AggregateError<Self::Error>> {
-        match command.payload {
-            BankAccountCommandPayload::OpenAccount { account_id } => {
+        services: &Self::Services,
+    ) -> Result<Vec<Self::Event>, Self::Error> {
+        match command {
+            BankAccountCommand::OpenAccount { account_id } => {
                 Ok(vec![BankAccountEvent::AccountOpened { account_id }])
             }
-            BankAccountCommandPayload::DepositMoney { amount } => {
+            BankAccountCommand::DepositMoney { amount } => {
                 let balance = self.balance + amount;
                 Ok(vec![BankAccountEvent::CustomerDepositedMoney {
                     amount,
                     balance,
                 }])
             }
-            BankAccountCommandPayload::WithdrawMoney { amount, atm_id } => {
+            BankAccountCommand::WithdrawMoney { amount, atm_id } => {
                 let balance = self.balance - amount;
                 if balance < 0_f64 {
-                    return Err(AggregateError::UserError("funds not available".into()));
+                    return Err("funds not available".into());
                 }
-                if command
+                if services
                     .services
                     .atm_withdrawal(&atm_id, amount)
                     .await
                     .is_err()
                 {
-                    return Err(AggregateError::UserError("atm rule violation".into()));
+                    return Err("atm rule violation".into());
                 };
                 Ok(vec![BankAccountEvent::CustomerWithdrewCash {
                     amount,
                     balance,
                 }])
             }
-            BankAccountCommandPayload::WriteCheck {
+            BankAccountCommand::WriteCheck {
                 check_number,
                 amount,
             } => {
                 let balance = self.balance - amount;
                 if balance < 0_f64 {
-                    return Err(AggregateError::UserError("funds not available".into()));
+                    return Err("funds not available".into());
                 }
-                if command
+                if services
                     .services
                     .validate_check(&self.account_id, &check_number)
                     .await
                     .is_err()
                 {
-                    return Err(AggregateError::UserError("check invalid".into()));
+                    return Err("check invalid".into());
                 };
                 Ok(vec![BankAccountEvent::CustomerWroteCheck {
                     check_number,
@@ -124,10 +127,9 @@ mod aggregate_tests {
     use cqrs_es::test::TestFramework;
 
     use crate::domain::aggregate::BankAccount;
-    use crate::domain::commands::{
-        AtmError, BankAccountCommand, BankAccountCommandPayload, BankAccountServices, CheckingError,
-    };
+    use crate::domain::commands::BankAccountCommand;
     use crate::domain::events::BankAccountEvent;
+    use crate::services::{AtmError, BankAccountApi, BankAccountServices, CheckingError};
 
     // A test framework that will apply our events and command
     // and verify that the logic works as expected.
@@ -139,12 +141,10 @@ mod aggregate_tests {
             amount: 200.0,
             balance: 200.0,
         };
-        let command = BankAccountCommand {
-            payload: BankAccountCommandPayload::DepositMoney { amount: 200.0 },
-            services: Box::new(MockBankAccountServices::default()),
-        };
+        let command = BankAccountCommand::DepositMoney { amount: 200.0 };
+        let services = BankAccountServices::new(Box::new(MockBankAccountServices::default()));
         // Obtain a new test framework
-        AccountTestFramework::default()
+        AccountTestFramework::with(services)
             // In a test case with no previous events
             .given_no_previous_events()
             // Wnen we fire this command
@@ -163,12 +163,10 @@ mod aggregate_tests {
             amount: 200.0,
             balance: 400.0,
         };
-        let command = BankAccountCommand {
-            payload: BankAccountCommandPayload::DepositMoney { amount: 200.0 },
-            services: Box::new(MockBankAccountServices::default()),
-        };
+        let command = BankAccountCommand::DepositMoney { amount: 200.0 };
+        let services = BankAccountServices::new(Box::new(MockBankAccountServices::default()));
 
-        AccountTestFramework::default()
+        AccountTestFramework::with(services)
             // Given this previously applied event
             .given(vec![previous])
             // When we fire this command
@@ -189,15 +187,12 @@ mod aggregate_tests {
         };
         let services = MockBankAccountServices::default();
         services.set_atm_withdrawal_response(Ok(()));
-        let command = BankAccountCommand {
-            payload: BankAccountCommandPayload::WithdrawMoney {
-                amount: 100.0,
-                atm_id: "ATM34f1ba3c".to_string(),
-            },
-            services: Box::new(services),
+        let command = BankAccountCommand::WithdrawMoney {
+            amount: 100.0,
+            atm_id: "ATM34f1ba3c".to_string(),
         };
 
-        AccountTestFramework::default()
+        AccountTestFramework::with(BankAccountServices::new(Box::new(services)))
             .given(vec![previous])
             .when(command)
             .then_expect_events(vec![expected]);
@@ -211,15 +206,13 @@ mod aggregate_tests {
         };
         let services = MockBankAccountServices::default();
         services.set_atm_withdrawal_response(Err(AtmError));
-        let command = BankAccountCommand {
-            payload: BankAccountCommandPayload::WithdrawMoney {
-                amount: 100.0,
-                atm_id: "ATM34f1ba3c".to_string(),
-            },
-            services: Box::new(services),
+        let command = BankAccountCommand::WithdrawMoney {
+            amount: 100.0,
+            atm_id: "ATM34f1ba3c".to_string(),
         };
 
-        AccountTestFramework::default()
+        let services = BankAccountServices::new(Box::new(services));
+        AccountTestFramework::with(services)
             .given(vec![previous])
             .when(command)
             .then_expect_error_message("atm rule violation");
@@ -227,15 +220,13 @@ mod aggregate_tests {
 
     #[test]
     fn test_withdraw_money_funds_not_available() {
-        let command = BankAccountCommand {
-            payload: BankAccountCommandPayload::WithdrawMoney {
-                amount: 200.0,
-                atm_id: "ATM34f1ba3c".to_string(),
-            },
-            services: Box::new(MockBankAccountServices::default()),
+        let command = BankAccountCommand::WithdrawMoney {
+            amount: 200.0,
+            atm_id: "ATM34f1ba3c".to_string(),
         };
 
-        AccountTestFramework::default()
+        let services = BankAccountServices::new(Box::new(MockBankAccountServices::default()));
+        AccountTestFramework::with(services)
             .given_no_previous_events()
             .when(command)
             // Here we expect an error rather than any events
@@ -255,15 +246,13 @@ mod aggregate_tests {
         };
         let services = MockBankAccountServices::default();
         services.set_validate_check_response(Ok(()));
-        let command = BankAccountCommand {
-            payload: BankAccountCommandPayload::WriteCheck {
-                check_number: "1170".to_string(),
-                amount: 100.0,
-            },
-            services: Box::new(services),
+        let services = BankAccountServices::new(Box::new(services));
+        let command = BankAccountCommand::WriteCheck {
+            check_number: "1170".to_string(),
+            amount: 100.0,
         };
 
-        AccountTestFramework::default()
+        AccountTestFramework::with(services)
             .given(vec![previous])
             .when(command)
             .then_expect_events(vec![expected]);
@@ -277,15 +266,13 @@ mod aggregate_tests {
         };
         let services = MockBankAccountServices::default();
         services.set_validate_check_response(Err(CheckingError));
-        let command = BankAccountCommand {
-            payload: BankAccountCommandPayload::WriteCheck {
-                check_number: "1170".to_string(),
-                amount: 100.0,
-            },
-            services: Box::new(services),
+        let services = BankAccountServices::new(Box::new(services));
+        let command = BankAccountCommand::WriteCheck {
+            check_number: "1170".to_string(),
+            amount: 100.0,
         };
 
-        AccountTestFramework::default()
+        AccountTestFramework::with(services)
             .given(vec![previous])
             .when(command)
             .then_expect_error_message("check invalid");
@@ -293,15 +280,13 @@ mod aggregate_tests {
 
     #[test]
     fn test_wrote_check_funds_not_available() {
-        let command = BankAccountCommand {
-            payload: BankAccountCommandPayload::WriteCheck {
-                check_number: "1170".to_string(),
-                amount: 100.0,
-            },
-            services: Box::new(MockBankAccountServices::default()),
+        let command = BankAccountCommand::WriteCheck {
+            check_number: "1170".to_string(),
+            amount: 100.0,
         };
 
-        AccountTestFramework::default()
+        let services = BankAccountServices::new(Box::new(MockBankAccountServices::default()));
+        AccountTestFramework::with(services)
             .given_no_previous_events()
             .when(command)
             .then_expect_error_message("funds not available")
@@ -331,7 +316,7 @@ mod aggregate_tests {
     }
 
     #[async_trait]
-    impl BankAccountServices for MockBankAccountServices {
+    impl BankAccountApi for MockBankAccountServices {
         async fn atm_withdrawal(&self, _atm_id: &str, _amount: f64) -> Result<(), AtmError> {
             self.atm_withdrawal_response.lock().unwrap().take().unwrap()
         }
