@@ -24,4 +24,3 @@ chrono = "0.4.19"
 tokio = { version = "1", features = ["full"] }
 tower = "0.4.12"
 tower-http = "0.2.5"
-postgres-es = { path = "../postgres-es" }
