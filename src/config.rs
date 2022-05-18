@@ -29,9 +29,7 @@ pub fn cqrs_framework(
     // Create and return an event-sourced `CqrsFramework`.
     let queries: Vec<Box<dyn Query<BankAccount>>> =
         vec![Box::new(simple_query), Box::new(account_query)];
-    let services = BankAccountServices {
-        services: Box::new(HappyPathBankAccountServices),
-    };
+    let services = BankAccountServices::new(Box::new(HappyPathBankAccountServices));
     (
         Arc::new(postgres_es::postgres_cqrs(pool, queries, services)),
         account_view_repo,
