@@ -11,15 +11,14 @@ use axum::{Json, Router};
 use cqrs_es::persist::ViewRepository;
 use postgres_es::{default_postgress_pool, PostgresCqrs, PostgresViewRepository};
 
+use crate::command_extractor::CommandExtractor;
 use crate::config::cqrs_framework;
 use crate::domain::aggregate::BankAccount;
-use crate::domain::commands::BankAccountCommand;
-use crate::metadata_extension::MetadataExtension;
 use crate::queries::BankAccountView;
 
+mod command_extractor;
 mod config;
 mod domain;
-mod metadata_extension;
 mod queries;
 mod services;
 
@@ -73,9 +72,8 @@ async fn query_handler(
 // Serves as our command endpoint to make changes in a `BankAccount` aggregate.
 async fn command_handler(
     Path(account_id): Path<String>,
-    Json(command): Json<BankAccountCommand>,
     Extension(cqrs): Extension<Arc<PostgresCqrs<BankAccount>>>,
-    MetadataExtension(metadata): MetadataExtension,
+    CommandExtractor(metadata, command): CommandExtractor,
 ) -> Response {
     match cqrs
         .execute_with_metadata(&account_id, command, metadata)
