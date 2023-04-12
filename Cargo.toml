@@ -10,6 +10,7 @@ documentation = "https://docs.rs/cqrs-demo"
 repository = "https://github.com/serverlesstechnology/cqrs-demo"
 readme = "README.md"
 publish = false
+default-run = "cqrs-demo"
 
 [dependencies]
 cqrs-es = "0.4.8"
@@ -24,3 +25,13 @@ chrono = { version = "^0.4.20", default-features = false, features = ["clock"] }
 tokio = { version = "1", features = ["full"] }
 tower = "0.4"
 tower-http = "0.3"
+
+lambda_http = "0.7.3"
+
+[[bin]]
+name = "cqrs-demo"
+path = "src/main.rs"
+
+[[bin]]
+name = "bootstrap"
+path = "src/lambda_main.rs"
