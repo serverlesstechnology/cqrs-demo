@@ -5,6 +5,14 @@ use cqrs_demo::state::new_application_state;
 
 #[tokio::main]
 async fn main() {
+    let recorder: metrics_exporter_statsd::StatsdRecorder =
+        metrics_exporter_statsd::StatsdBuilder::from("127.0.0.1", 8125)
+            .with_queue_size(5000)
+            .with_buffer_size(1024)
+            .build(Some("test-"))
+            .expect("Could not create StatsdRecorder");
+    metrics::set_boxed_recorder(Box::new(recorder)).unwrap();
+
     let state = new_application_state().await;
     // Configure the Axum routes and services.
     // For this example a single logical endpoint is used and the HTTP method
