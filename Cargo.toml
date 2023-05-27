@@ -1,6 +1,6 @@
 [package]
 name = "cqrs-demo"
-version = "0.4.8"
+version = "0.4.9"
 authors = ["Dave Garred <dave.garred@serverlesstechnology.com>"]
 edition = "2021"
 license = "Apache-2.0"
@@ -13,8 +13,8 @@ publish = false
 default-run = "cqrs-demo"
 
 [dependencies]
-cqrs-es = "0.4.8"
-postgres-es = "0.4.8"
+cqrs-es = "0.4.9"
+postgres-es = "0.4.9"
 
 async-trait = "0.1"
 axum = "0.6"
