@@ -21,6 +21,7 @@ Enter the project folder and start a docker instance of PostgreSql
 
     cd cqrs-demo
     docker-compose up -d
+    ./db/create_tables.sh
 
 Start the application
 

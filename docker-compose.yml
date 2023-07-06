@@ -1,14 +1,13 @@
-version: '3.1'
+version: '3.7'
 
 services:
-  cqrs-postgres-db:
-    image: postgres
-    restart: always
-    ports:
-      - 5432:5432
+  dynamodb-local:
+    command: "-jar DynamoDBLocal.jar -sharedDb"
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb-local
     environment:
-      POSTGRES_DB: demo
-      POSTGRES_USER: demo_user
-      POSTGRES_PASSWORD: demo_pass
-    volumes:
-      - './db:/docker-entrypoint-initdb.d'
+      AWS_ACCESS_KEY_ID: 'TESTAWSID'
+      AWS_SECRET_ACCESS_KEY: 'TESTAWSKEY'
+      REGION: 'us-west-2'
+    ports:
+      - 8000:8000

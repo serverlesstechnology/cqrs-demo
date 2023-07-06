@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use cqrs_es::persist::GenericQuery;
 use cqrs_es::{EventEnvelope, Query, View};
-use postgres_es::PostgresViewRepository;
+use dynamo_es::DynamoViewRepository;
 use serde::{Deserialize, Serialize};
 
 use crate::domain::aggregate::BankAccount;
@@ -25,7 +25,7 @@ impl Query<BankAccount> for SimpleLoggingQuery {
 // which will serialize and persist our view after it is updated. It also
 // provides a `load` method to deserialize the view on request.
 pub type AccountQuery = GenericQuery<
-    PostgresViewRepository<BankAccountView, BankAccount>,
+    DynamoViewRepository<BankAccountView, BankAccount>,
     BankAccountView,
     BankAccount,
 >;
