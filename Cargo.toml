@@ -1,6 +1,6 @@
 [package]
 name = "cqrs-demo"
-version = "0.4.9"
+version = "0.4.10"
 authors = ["Dave Garred <dave.garred@serverlesstechnology.com>"]
 edition = "2021"
 license = "Apache-2.0"
@@ -13,20 +13,20 @@ publish = false
 default-run = "cqrs-demo"
 
 [dependencies]
-cqrs-es = "0.4.9"
-postgres-es = "0.4.9"
+cqrs-es = "0.4.10"
+postgres-es = "0.4.10"
 
 async-trait = "0.1"
 axum = "0.6"
 serde = { version = "1.0", features = ["derive"]}
 serde_json = "1.0"
-sqlx = { version = "0.6", features = [ "postgres" , "runtime-tokio-rustls", "json"] }
+sqlx = { version = "0.7", features = [ "postgres" , "runtime-tokio-rustls", "json"] }
 chrono = { version = "^0.4.20", default-features = false, features = ["clock"] }
 tokio = { version = "1", features = ["full"] }
 tower = "0.4"
-tower-http = "0.3"
+tower-http = "0.4"
 
-lambda_http = "0.7.3"
+lambda_http = "0.8"
 
 [[bin]]
 name = "cqrs-demo"
