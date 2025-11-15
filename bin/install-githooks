@@ -1,4 +1,0 @@
-#!/bin/bash
-# Configures the .githooks directory locally
-#
-git config --local core.hooksPath .githooks/
